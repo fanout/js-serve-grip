@@ -1,0 +1,48 @@
+{
+  "name": "@fanoutio/nextjs-grip",
+  "version": "0.0.1-alpha.0",
+  "description": "",
+  "main": "./build/index.js",
+  "module": "./build/index.es.js",
+  "jsnext:main": "build/index.es.js",
+  "types": "build/main.d.ts",
+  "scripts": {
+    "prepublishOnly": "npm run build",
+    "build": "npm run build-commonjs && npm run build-browser",
+    "build-commonjs": "npm run build-commonjs:clean && npm run build-commonjs:build",
+    "build-commonjs:clean": "rimraf build",
+    "build-commonjs:build": "rollup -c rollup.commonjs.config.js",
+    "build-browser": "npm run build-browser:clean && npm run build-browser:build",
+    "build-browser:clean": "rimraf browser",
+    "build-browser:build": "rollup -c rollup.browser.config.js",
+    "lint": "npm run lint:tslint",
+    "lint:tslint": "tslint -c tslint.json 'src/**/*.ts' 'test/**/*.ts'",
+    "test": "TS_NODE_FILES=true TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' mocha -r ts-node/register tests/*.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-json": "^4.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
+    "@rollup/plugin-replace": "^2.3.1",
+    "@rollup/plugin-typescript": "^3.0.0",
+    "@types/mocha": "^7.0.2",
+    "mocha": "^7.1.1",
+    "rimraf": "^3.0.2",
+    "rollup": "^1.32.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-globals": "^1.4.0",
+    "rollup-plugin-peer-deps-external": "^2.2.2",
+    "rollup-plugin-typescript2": "^0.26.0",
+    "ts-node": "^8.6.2",
+    "tslib": "^1.11.1",
+    "tslint": "^6.1.1",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "@fanoutio/grip": "^3.0.0-alpha.1",
+    "next": "^9.5.1"
+  }
+}
