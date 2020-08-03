@@ -1,6 +1,6 @@
 {
   "name": "@fanoutio/nextjs-grip",
-  "version": "0.0.1-alpha.0",
+  "version": "0.0.1-alpha.1",
   "description": "",
   "main": "./build/index.js",
   "module": "./build/index.es.js",
@@ -8,13 +8,10 @@
   "types": "build/main.d.ts",
   "scripts": {
     "prepublishOnly": "npm run build",
-    "build": "npm run build-commonjs && npm run build-browser",
+    "build": "npm run build-commonjs",
     "build-commonjs": "npm run build-commonjs:clean && npm run build-commonjs:build",
     "build-commonjs:clean": "rimraf build",
     "build-commonjs:build": "rollup -c rollup.commonjs.config.js",
-    "build-browser": "npm run build-browser:clean && npm run build-browser:build",
-    "build-browser:clean": "rimraf browser",
-    "build-browser:build": "rollup -c rollup.browser.config.js",
     "lint": "npm run lint:tslint",
     "lint:tslint": "tslint -c tslint.json 'src/**/*.ts' 'test/**/*.ts'",
     "test": "TS_NODE_FILES=true TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' mocha -r ts-node/register tests/*.ts"
