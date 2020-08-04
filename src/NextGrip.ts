@@ -8,6 +8,8 @@ import { NextGripApiResponse } from "./NextGripApiResponse";
 import { NextGripApiRequest } from "./NextGripApiRequest";
 import { NextGripApiHandler } from "./NextGripApiHandler";
 import IResponseGrip from "./IResponseGrip";
+import GripInstructNotAvailableException from "./data/GripInstructNotAvailableException";
+import GripInstructAlreadyStartedException from "./data/GripInstructAlreadyStartedException";
 
 function flattenHeader(value: undefined | string | string[]) {
     if (Array.isArray(value)) {
@@ -88,6 +90,9 @@ export default class NextGrip {
             Object.assign(req, { grip: requestGrip });
 
             const responseGrip: IResponseGrip = {
+                startInstruct: () => {
+                    throw new GripInstructNotAvailableException();
+                },
             };
             Object.assign(req, { grip: requestGrip });
 
@@ -97,15 +102,19 @@ export default class NextGrip {
             // Set response GRIP values
             if (requestGrip.isProxied) {
 
-                const gripInstruct = new GripInstruct();
-
-                const resWriteHead = res.writeHead;
+                let gripInstruct: GripInstruct | null = null;
+                responseGrip.startInstruct = () => {
+                    if (gripInstruct != null) {
+                        throw new GripInstructAlreadyStartedException();
+                    }
+                    gripInstruct = new GripInstruct();
+                    return gripInstruct;
+                }
 
                 // This overrides a writeHead, a function with a complex type declaration.
+                const resWriteHead = res.writeHead;
                 // @ts-ignore
                 res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
-
-                    console.log("writeHead", statusCode, reason, obj);
 
                     if (typeof reason === 'string') {
                         // assume this was called like this:
@@ -116,7 +125,9 @@ export default class NextGrip {
                         obj = reason;
                     }
 
-                    obj = Object.assign({}, obj, gripInstruct.toHeaders());
+                    if (gripInstruct != null) {
+                        obj = Object.assign({}, obj, gripInstruct.toHeaders());
+                    }
 
                     if (typeof reason === 'string') {
                         resWriteHead.call(res, statusCode, reason, obj);
@@ -124,8 +135,6 @@ export default class NextGrip {
                         resWriteHead.call(res, statusCode, obj);
                     }
                 };
-
-                responseGrip.gripInstruct = gripInstruct;
             } else {
                 // NOT PROXIED, needs to fail now
                 if (this.isGripProxyRequired) {
