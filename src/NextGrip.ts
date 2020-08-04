@@ -1,9 +1,13 @@
-import { Publisher, Item, GripInstruct, validateSig, IGripConfig, IPublisherConfig, IFormat } from "@fanoutio/grip";
-import INextGripConfig from "./INextGripConfig";
-import {NextGripApiResponse} from "./NextGripApiResponse";
-import {NextGripApiRequest} from "./NextGripApiRequest";
-import {NextGripApiHandler} from "./NextGripApiHandler";
 import { OutgoingHttpHeaders } from "http";
+
+import { GripInstruct, IGripConfig, IPublisherConfig, PrefixedPublisher, Publisher, validateSig } from "@fanoutio/grip";
+import INextGripConfig from "./INextGripConfig";
+import IRequestGrip from "./IRequestGrip";
+
+import { NextGripApiResponse } from "./NextGripApiResponse";
+import { NextGripApiRequest } from "./NextGripApiRequest";
+import { NextGripApiHandler } from "./NextGripApiHandler";
+import IResponseGrip from "./IResponseGrip";
 
 function flattenHeader(value: undefined | string | string[]) {
     if (Array.isArray(value)) {
@@ -17,7 +21,7 @@ export default class NextGrip {
     pubServers?: IPublisherConfig[];
     prefix: string = '';
     isGripProxyRequired: boolean = false;
-    _publisher?: Publisher;
+    _publisher?: PrefixedPublisher;
 
     constructor(config?: INextGripConfig) {
         this.applyConfig(config);
@@ -37,35 +41,36 @@ export default class NextGrip {
     checkGripStatus(req: NextGripApiRequest) {
         const gripSigHeader = flattenHeader(req.headers['grip-sig']);
 
-        let gripProxied = false;
-        let gripSigned = false;
+        let isProxied = false;
+        let isSigned = false;
         if (gripSigHeader !== undefined && Array.isArray(this.gripProxies) && this.gripProxies.length > 0) {
             if (this.gripProxies.every(proxy => proxy.key)) {
                 // If all proxies have keys, then only consider the request
                 // signed if at least one of them has signed it
                 if (this.gripProxies.some(proxy => validateSig(gripSigHeader, proxy.key))) {
-                    gripProxied = true;
-                    gripSigned = true;
+                    isProxied = true;
+                    isSigned = true;
                 }
             } else {
-                gripProxied = true;
+                isProxied = true;
             }
         }
         return {
-            gripProxied,
-            gripSigned,
+            isProxied,
+            isSigned,
         };
     }
 
-    _getPublisher() {
+    _getPublisher(): PrefixedPublisher {
         if (this._publisher == null) {
-            this._publisher = new Publisher();
+            const publisher = new Publisher();
             if (this.gripProxies != null) {
-                this._publisher.applyConfig(this.gripProxies);
+                publisher.applyConfig(this.gripProxies);
             }
             if (this.pubServers != null) {
-                this._publisher.applyConfig(this.pubServers);
+                publisher.applyConfig(this.pubServers);
             }
+            this._publisher = publisher.buildPrefixedPublisher(this.prefix) as PrefixedPublisher;
         }
         return this._publisher;
     }
@@ -73,9 +78,25 @@ export default class NextGrip {
     createGripHandler(fn: NextGripApiHandler) {
         return async (req: NextGripApiRequest, res: NextGripApiResponse) => {
 
-            Object.assign(req, this.checkGripStatus(req));
+            // Initialize the API request and response with
+            // NextGrip fields.
 
-            if (req.gripProxied) {
+            const requestGrip: IRequestGrip = {
+                isProxied: false,
+                isSigned: false,
+            };
+            Object.assign(req, { grip: requestGrip });
+
+            const responseGrip: IResponseGrip = {
+                getPublisher: () => this._getPublisher(),
+            };
+            Object.assign(req, { grip: requestGrip });
+
+            // Set request GRIP values
+            Object.assign(requestGrip, this.checkGripStatus(req));
+
+            // Set response GRIP values
+            if (requestGrip.isProxied) {
 
                 const gripInstruct = new GripInstruct();
 
@@ -105,7 +126,7 @@ export default class NextGrip {
                     }
                 };
 
-                res.gripInstruct = gripInstruct;
+                responseGrip.gripInstruct = gripInstruct;
             } else {
                 // NOT PROXIED, needs to fail now
                 if (this.isGripProxyRequired) {
@@ -114,14 +135,6 @@ export default class NextGrip {
                     return;
                 }
             }
-
-            res.gripPublish = async (channel: string, formats: IFormat | IFormat[], id?: string, prevId?: string) => {
-                const pubControl = this._getPublisher();
-                await pubControl.publish(
-                    this.prefix + channel,
-                    new Item(formats, id, prevId)
-                );
-            };
 
             await fn(req, res);
 
