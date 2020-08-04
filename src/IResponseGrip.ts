@@ -1,6 +1,5 @@
-import { GripInstruct, PrefixedPublisher } from "@fanoutio/grip";
+import { GripInstruct } from "@fanoutio/grip";
 
 export default interface IResponseGrip {
     gripInstruct?: GripInstruct;
-    getPublisher: () => PrefixedPublisher;
 }

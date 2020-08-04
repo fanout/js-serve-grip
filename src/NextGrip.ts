@@ -61,7 +61,7 @@ export default class NextGrip {
         };
     }
 
-    _getPublisher(): PrefixedPublisher {
+    getPublisher(): PrefixedPublisher {
         if (this._publisher == null) {
             const publisher = new Publisher();
             if (this.gripProxies != null) {
@@ -88,7 +88,6 @@ export default class NextGrip {
             Object.assign(req, { grip: requestGrip });
 
             const responseGrip: IResponseGrip = {
-                getPublisher: () => this._getPublisher(),
             };
             Object.assign(req, { grip: requestGrip });
 
