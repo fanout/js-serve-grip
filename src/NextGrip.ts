@@ -1,6 +1,17 @@
 import { OutgoingHttpHeaders } from "http";
 
-import { GripInstruct, IGripConfig, IPublisherConfig, PrefixedPublisher, Publisher, validateSig } from "@fanoutio/grip";
+import {
+    GripInstruct,
+    IGripConfig,
+    IPublisherConfig,
+    PrefixedPublisher,
+    Publisher,
+    WebSocketContext,
+    decodeWebSocketEvents,
+    encodeWebSocketEvents,
+    validateSig,
+} from "@fanoutio/grip";
+
 import INextGripConfig from "./INextGripConfig";
 import IRequestGrip from "./IRequestGrip";
 
@@ -86,6 +97,7 @@ export default class NextGrip {
             const requestGrip: IRequestGrip = {
                 isProxied: false,
                 isSigned: false,
+                wsContext: null,
             };
             Object.assign(req, { grip: requestGrip });
 
@@ -98,6 +110,54 @@ export default class NextGrip {
 
             // Set request GRIP values
             Object.assign(requestGrip, this.checkGripStatus(req));
+
+            const webSocketEventContentType = 'application/websocket-events';
+
+            let contentTypeHeader = flattenHeader(req.headers['content-type']);
+            if (contentTypeHeader != null) {
+                const at = contentTypeHeader.indexOf(';');
+                if (at >= 0) {
+                    contentTypeHeader = contentTypeHeader.substring(0, at);
+                }
+            }
+
+            const acceptTypesHeader = flattenHeader(req.headers['accept']);
+            const acceptTypes = acceptTypesHeader?.split(',')
+                .map(item => item.trim());
+
+            let wsContext: WebSocketContext | null = null;
+
+            if (req.method === 'POST' && (
+                contentTypeHeader === webSocketEventContentType ||
+                acceptTypes?.includes(webSocketEventContentType)
+            )) {
+                const cid = flattenHeader(req.headers['connection-id']);
+                if (cid == null) {
+                    res.statusCode = 400;
+                    res.end('WebSocket event missing connection-id header.\n');
+                    return;
+                }
+
+                // Handle meta keys
+                const meta = {};
+                for (const [key, value] of Object.entries(req.headers)) {
+                    const lKey = key.toLowerCase();
+                    if (lKey.startsWith('meta-')) {
+                        meta[lKey.substring(5)] = value;
+                    }
+                }
+
+                let events = null;
+                try {
+                    events = decodeWebSocketEvents(req.body);
+                } catch (err) {
+                    res.statusCode = 400;
+                    res.end('Error parsing WebSocket events.\n');
+                    return;
+                }
+                wsContext = new WebSocketContext(cid, meta, events, this.prefix);
+                requestGrip.wsContext = wsContext;
+            }
 
             // Set response GRIP values
             if (requestGrip.isProxied) {
@@ -125,6 +185,10 @@ export default class NextGrip {
                         obj = reason;
                     }
 
+                    if (statusCode === 200 && wsContext != null) {
+                        obj = Object.assign({}, obj, wsContext.toHeaders());
+                    }
+
                     if (gripInstruct != null) {
                         obj = Object.assign({}, obj, gripInstruct.toHeaders());
                     }
@@ -135,6 +199,21 @@ export default class NextGrip {
                         resWriteHead.call(res, statusCode, obj);
                     }
                 };
+
+                const resEnd = res.end;
+                // @ts-ignore
+                res.end = (chunk, encoding, callback) => {
+
+                    if (res.statusCode === 200 && wsContext != null) {
+
+                        const events = wsContext.getOutgoingEvents();
+                        res.write(encodeWebSocketEvents(events));
+
+                    }
+
+                    resEnd.call(res, chunk, encoding, callback);
+                }
+
             } else {
                 // NOT PROXIED, needs to fail now
                 if (this.isGripProxyRequired) {
