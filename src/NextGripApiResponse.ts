@@ -1,6 +1,6 @@
-import { NextApiResponse } from "next";
+import { ServerResponse } from "http";
 import IResponseGrip from "./IResponseGrip";
 
-export type NextGripApiResponse = NextApiResponse & {
+export type NextGripApiResponse = ServerResponse & {
     grip: IResponseGrip;
 }

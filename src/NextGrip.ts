@@ -13,7 +13,7 @@ import {
     validateSig,
 } from "@fanoutio/grip";
 
-import INextGripConfig from "./INextGripConfig";
+import IConnectGripConfig from "./INextGripConfig";
 import IRequestGrip from "./IRequestGrip";
 
 import { NextGripApiResponse } from "./NextGripApiResponse";
@@ -38,12 +38,12 @@ export default class NextGrip extends CallableInstance<[IncomingMessage, ServerR
     isGripProxyRequired: boolean = false;
     _publisher?: PrefixedPublisher;
 
-    constructor(config?: INextGripConfig) {
+    constructor(config?: IConnectGripConfig) {
         super('exec');
         this.applyConfig(config);
     }
 
-    applyConfig(config: INextGripConfig = {}) {
+    applyConfig(config: IConnectGripConfig = {}) {
 
         const { gripProxies, gripPubServers, gripProxyRequired = false, gripPrefix = '' } = config;
 
@@ -156,9 +156,22 @@ export default class NextGrip extends CallableInstance<[IncomingMessage, ServerR
                 }
             }
 
+            if (req.body == null) {
+                req.body = await new Promise(resolve => {
+                    const bodySegments: any[] = [];
+                    req.on('data', (chunk) => {
+                        bodySegments.push(chunk);
+                    });
+                    req.on('end', () => {
+                        const bodyBuffer = Buffer.concat(bodySegments);
+                        resolve(bodyBuffer);
+                    });
+                });
+            }
+
             let events = null;
             try {
-                events = decodeWebSocketEvents(req.body);
+                events = decodeWebSocketEvents(req.body!);
             } catch (err) {
                 res.statusCode = 400;
                 res.end('Error parsing WebSocket events.\n');

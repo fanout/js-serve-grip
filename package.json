@@ -40,6 +40,6 @@
   },
   "dependencies": {
     "@fanoutio/grip": "^3.0.0-alpha.5",
-    "next": "^9.5.1"
+    "callable-instance": "^2.0.0"
   }
 }

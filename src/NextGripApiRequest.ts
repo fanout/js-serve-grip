@@ -1,6 +1,7 @@
-import { NextApiRequest } from "next";
+import { IncomingMessage } from "http";
 import IRequestGrip from "./IRequestGrip";
 
-export type NextGripApiRequest = NextApiRequest & {
+export type NextGripApiRequest = IncomingMessage & {
     grip: IRequestGrip;
+    body?: Buffer | string;
 }
