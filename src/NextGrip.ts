@@ -1,4 +1,5 @@
-import { OutgoingHttpHeaders } from "http";
+import { IncomingMessage, ServerResponse, OutgoingHttpHeaders } from "http";
+import * as CallableInstance from "callable-instance";
 
 import {
     GripInstruct,
@@ -29,7 +30,8 @@ function flattenHeader(value: undefined | string | string[]) {
     return value;
 }
 
-export default class NextGrip {
+// @ts-ignore
+export default class NextGrip extends CallableInstance<[IncomingMessage, ServerResponse, Function], void> {
     gripProxies?: IGripConfig[];
     pubServers?: IPublisherConfig[];
     prefix: string = '';
@@ -37,6 +39,7 @@ export default class NextGrip {
     _publisher?: PrefixedPublisher;
 
     constructor(config?: INextGripConfig) {
+        super('exec');
         this.applyConfig(config);
     }
 
@@ -88,143 +91,155 @@ export default class NextGrip {
         return this._publisher;
     }
 
+    exec(req: IncomingMessage, res: ServerResponse, fn: Function) {
+
+        this.handle(req as NextGripApiRequest, res as NextGripApiResponse)
+            .then(() => fn());
+
+    }
+
+    async handle(req: NextGripApiRequest, res: NextGripApiResponse) {
+
+        // Initialize the API request and response with
+        // NextGrip fields.
+
+        const requestGrip: IRequestGrip = {
+            isProxied: false,
+            isSigned: false,
+            wsContext: null,
+        };
+        Object.assign(req, { grip: requestGrip });
+
+        const responseGrip: IResponseGrip = {
+            startInstruct: () => {
+                throw new GripInstructNotAvailableException();
+            },
+        };
+        Object.assign(res, { grip: responseGrip });
+
+        // Set request GRIP values
+        Object.assign(requestGrip, this.checkGripStatus(req));
+
+        const webSocketEventContentType = 'application/websocket-events';
+
+        let contentTypeHeader = flattenHeader(req.headers['content-type']);
+        if (contentTypeHeader != null) {
+            const at = contentTypeHeader.indexOf(';');
+            if (at >= 0) {
+                contentTypeHeader = contentTypeHeader.substring(0, at);
+            }
+        }
+
+        const acceptTypesHeader = flattenHeader(req.headers['accept']);
+        const acceptTypes = acceptTypesHeader?.split(',')
+            .map(item => item.trim());
+
+        let wsContext: WebSocketContext | null = null;
+
+        if (req.method === 'POST' && (
+            contentTypeHeader === webSocketEventContentType ||
+            acceptTypes?.includes(webSocketEventContentType)
+        )) {
+            const cid = flattenHeader(req.headers['connection-id']);
+            if (cid == null) {
+                res.statusCode = 400;
+                res.end('WebSocket event missing connection-id header.\n');
+                return;
+            }
+
+            // Handle meta keys
+            const meta = {};
+            for (const [key, value] of Object.entries(req.headers)) {
+                const lKey = key.toLowerCase();
+                if (lKey.startsWith('meta-')) {
+                    meta[lKey.substring(5)] = value;
+                }
+            }
+
+            let events = null;
+            try {
+                events = decodeWebSocketEvents(req.body);
+            } catch (err) {
+                res.statusCode = 400;
+                res.end('Error parsing WebSocket events.\n');
+                return;
+            }
+            wsContext = new WebSocketContext(cid, meta, events, this.prefix);
+            requestGrip.wsContext = wsContext;
+        }
+
+        // Set response GRIP values
+        if (requestGrip.isProxied) {
+
+            let gripInstruct: GripInstruct | null = null;
+            responseGrip.startInstruct = () => {
+                if (gripInstruct != null) {
+                    throw new GripInstructAlreadyStartedException();
+                }
+                gripInstruct = new GripInstruct();
+                return gripInstruct;
+            }
+
+            // This overrides a writeHead, a function with a complex type declaration.
+            const resWriteHead = res.writeHead;
+            // @ts-ignore
+            res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
+
+                if (typeof reason === 'string') {
+                    // assume this was called like this:
+                    // writeHead(statusCode, reasonPhrase[, headers])
+                } else {
+                    // this was called like this:
+                    // writeHead(statusCode[, headers])
+                    obj = reason;
+                }
+
+                if (statusCode === 200 && wsContext != null) {
+                    obj = Object.assign({}, obj, wsContext.toHeaders());
+                }
+
+                if (gripInstruct != null) {
+                    obj = Object.assign({}, obj, gripInstruct.toHeaders());
+                }
+
+                if (typeof reason === 'string') {
+                    resWriteHead.call(res, statusCode, reason, obj);
+                } else {
+                    resWriteHead.call(res, statusCode, obj);
+                }
+            };
+
+            const resEnd = res.end;
+            // @ts-ignore
+            res.end = (chunk, encoding, callback) => {
+
+                if (res.statusCode === 200 && wsContext != null) {
+
+                    const events = wsContext.getOutgoingEvents();
+                    res.write(encodeWebSocketEvents(events));
+
+                }
+
+                resEnd.call(res, chunk, encoding, callback);
+            }
+
+        } else {
+
+            if (this.isGripProxyRequired) {
+                // NOT PROXIED, needs to fail now
+                res.statusCode = 501;
+                res.end('Not Implemented.\n');
+                return;
+            }
+
+        }
+
+    }
+
     createGripHandler(fn: NextGripApiHandler) {
         return async (req: NextGripApiRequest, res: NextGripApiResponse) => {
 
-            // Initialize the API request and response with
-            // NextGrip fields.
-
-            const requestGrip: IRequestGrip = {
-                isProxied: false,
-                isSigned: false,
-                wsContext: null,
-            };
-            Object.assign(req, { grip: requestGrip });
-
-            const responseGrip: IResponseGrip = {
-                startInstruct: () => {
-                    throw new GripInstructNotAvailableException();
-                },
-            };
-            Object.assign(req, { grip: requestGrip });
-
-            // Set request GRIP values
-            Object.assign(requestGrip, this.checkGripStatus(req));
-
-            const webSocketEventContentType = 'application/websocket-events';
-
-            let contentTypeHeader = flattenHeader(req.headers['content-type']);
-            if (contentTypeHeader != null) {
-                const at = contentTypeHeader.indexOf(';');
-                if (at >= 0) {
-                    contentTypeHeader = contentTypeHeader.substring(0, at);
-                }
-            }
-
-            const acceptTypesHeader = flattenHeader(req.headers['accept']);
-            const acceptTypes = acceptTypesHeader?.split(',')
-                .map(item => item.trim());
-
-            let wsContext: WebSocketContext | null = null;
-
-            if (req.method === 'POST' && (
-                contentTypeHeader === webSocketEventContentType ||
-                acceptTypes?.includes(webSocketEventContentType)
-            )) {
-                const cid = flattenHeader(req.headers['connection-id']);
-                if (cid == null) {
-                    res.statusCode = 400;
-                    res.end('WebSocket event missing connection-id header.\n');
-                    return;
-                }
-
-                // Handle meta keys
-                const meta = {};
-                for (const [key, value] of Object.entries(req.headers)) {
-                    const lKey = key.toLowerCase();
-                    if (lKey.startsWith('meta-')) {
-                        meta[lKey.substring(5)] = value;
-                    }
-                }
-
-                let events = null;
-                try {
-                    events = decodeWebSocketEvents(req.body);
-                } catch (err) {
-                    res.statusCode = 400;
-                    res.end('Error parsing WebSocket events.\n');
-                    return;
-                }
-                wsContext = new WebSocketContext(cid, meta, events, this.prefix);
-                requestGrip.wsContext = wsContext;
-            }
-
-            // Set response GRIP values
-            if (requestGrip.isProxied) {
-
-                let gripInstruct: GripInstruct | null = null;
-                responseGrip.startInstruct = () => {
-                    if (gripInstruct != null) {
-                        throw new GripInstructAlreadyStartedException();
-                    }
-                    gripInstruct = new GripInstruct();
-                    return gripInstruct;
-                }
-
-                // This overrides a writeHead, a function with a complex type declaration.
-                const resWriteHead = res.writeHead;
-                // @ts-ignore
-                res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
-
-                    if (typeof reason === 'string') {
-                        // assume this was called like this:
-                        // writeHead(statusCode, reasonPhrase[, headers])
-                    } else {
-                        // this was called like this:
-                        // writeHead(statusCode[, headers])
-                        obj = reason;
-                    }
-
-                    if (statusCode === 200 && wsContext != null) {
-                        obj = Object.assign({}, obj, wsContext.toHeaders());
-                    }
-
-                    if (gripInstruct != null) {
-                        obj = Object.assign({}, obj, gripInstruct.toHeaders());
-                    }
-
-                    if (typeof reason === 'string') {
-                        resWriteHead.call(res, statusCode, reason, obj);
-                    } else {
-                        resWriteHead.call(res, statusCode, obj);
-                    }
-                };
-
-                const resEnd = res.end;
-                // @ts-ignore
-                res.end = (chunk, encoding, callback) => {
-
-                    if (res.statusCode === 200 && wsContext != null) {
-
-                        const events = wsContext.getOutgoingEvents();
-                        res.write(encodeWebSocketEvents(events));
-
-                    }
-
-                    resEnd.call(res, chunk, encoding, callback);
-                }
-
-            } else {
-
-                if (this.isGripProxyRequired) {
-                    // NOT PROXIED, needs to fail now
-                    res.statusCode = 501;
-                    res.end('Not Implemented.\n');
-                    return;
-                }
-
-            }
-
+            await this.handle(req, res);
             await fn(req, res);
 
         };
