@@ -215,12 +215,14 @@ export default class NextGrip {
                 }
 
             } else {
-                // NOT PROXIED, needs to fail now
+
                 if (this.isGripProxyRequired) {
+                    // NOT PROXIED, needs to fail now
                     res.statusCode = 501;
                     res.end('Not Implemented.\n');
                     return;
                 }
+
             }
 
             await fn(req, res);
