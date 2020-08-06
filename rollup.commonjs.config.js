@@ -47,5 +47,6 @@ export default {
     ],
     external: [
         '@fanoutio/grip',
+        'callable-instance',
     ],
 }
