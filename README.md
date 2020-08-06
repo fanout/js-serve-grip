@@ -40,7 +40,7 @@ app.use( '/path', (res, req) => {
         const gripInstruct = res.grip.startInstruct();
         gripInstruct.addChannel('test');
         gripInstruct.setHoldStream();
-        res.send('[stream open]\n');
+        res.end('[stream open]\n');
     }
 
 });
@@ -76,7 +76,7 @@ export default async(req, res) => {
         const gripInstruct = res.grip.startInstruct();
         gripInstruct.addChannel('test');
         gripInstruct.setHoldStream();
-        res.send('[stream open]\n');
+        res.end('[stream open]\n');
     }
 
 }
