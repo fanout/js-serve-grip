@@ -22,6 +22,8 @@ import IResponseGrip from "./IResponseGrip";
 import GripInstructNotAvailableException from "./data/GripInstructNotAvailableException";
 import GripInstructAlreadyStartedException from "./data/GripInstructAlreadyStartedException";
 
+const CONTENT_TYPE_WEBSOCKET_EVENTS = 'application/websocket-events';
+
 function flattenHeader(value: undefined | string | string[]) {
     if (Array.isArray(value)) {
         return value[0];
@@ -53,29 +55,6 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
     }
 
-    checkGripStatus(req: ConnectGripApiRequest) {
-        const gripSigHeader = flattenHeader(req.headers['grip-sig']);
-
-        let isProxied = false;
-        let isSigned = false;
-        if (gripSigHeader !== undefined && Array.isArray(this.gripProxies) && this.gripProxies.length > 0) {
-            if (this.gripProxies.every(proxy => proxy.key)) {
-                // If all proxies have keys, then only consider the request
-                // signed if at least one of them has signed it
-                if (this.gripProxies.some(proxy => validateSig(gripSigHeader, proxy.key))) {
-                    isProxied = true;
-                    isSigned = true;
-                }
-            } else {
-                isProxied = true;
-            }
-        }
-        return {
-            isProxied,
-            isSigned,
-        };
-    }
-
     getPublisher(): PrefixedPublisher {
         if (this._publisher == null) {
             const publisher = new Publisher();
@@ -93,33 +72,39 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
     exec(req: IncomingMessage, res: ServerResponse, fn: Function) {
 
         this.handle(req as ConnectGripApiRequest, res as ConnectGripApiResponse)
-            .then(() => fn());
+            .then(() => fn())
+            .catch(err => fn(err));
 
     }
 
     async handle(req: ConnectGripApiRequest, res: ConnectGripApiResponse) {
 
-        // Initialize the API request and response with
-        // ConnectGrip fields.
+        // ## Set Request GRIP values
 
-        const requestGrip: IRequestGrip = {
-            isProxied: false,
-            isSigned: false,
-            wsContext: null,
-        };
-        Object.assign(req, { grip: requestGrip });
+        const gripSigHeader = flattenHeader(req.headers['grip-sig']);
 
-        const responseGrip: IResponseGrip = {
-            startInstruct: () => {
-                throw new GripInstructNotAvailableException();
-            },
-        };
-        Object.assign(res, { grip: responseGrip });
+        let isProxied = false;
+        let isSigned = false;
+        if (gripSigHeader !== undefined && Array.isArray(this.gripProxies) && this.gripProxies.length > 0) {
+            if (this.gripProxies.every(proxy => proxy.key)) {
+                // If all proxies have keys, then only consider the request
+                // signed if at least one of them has signed it
+                if (this.gripProxies.some(proxy => validateSig(gripSigHeader, proxy.key))) {
+                    isProxied = true;
+                    isSigned = true;
+                }
+            } else {
+                isProxied = true;
+            }
+        }
 
-        // Set request GRIP values
-        Object.assign(requestGrip, this.checkGripStatus(req));
-
-        const webSocketEventContentType = 'application/websocket-events';
+        if (!isProxied && this.isGripProxyRequired) {
+            // If we require a Grip proxy but we detect there is
+            // not one, we needs to fail now
+            res.statusCode = 501;
+            res.end('Not Implemented.\n');
+            return;
+        }
 
         let contentTypeHeader = flattenHeader(req.headers['content-type']);
         if (contentTypeHeader != null) {
@@ -136,8 +121,8 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
         let wsContext: WebSocketContext | null = null;
 
         if (req.method === 'POST' && (
-            contentTypeHeader === webSocketEventContentType ||
-            acceptTypes?.includes(webSocketEventContentType)
+            contentTypeHeader === CONTENT_TYPE_WEBSOCKET_EVENTS ||
+            acceptTypes?.includes(CONTENT_TYPE_WEBSOCKET_EVENTS)
         )) {
             const cid = flattenHeader(req.headers['connection-id']);
             if (cid == null) {
@@ -177,14 +162,22 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
                 return;
             }
             wsContext = new WebSocketContext(cid, meta, events, this.prefix);
-            requestGrip.wsContext = wsContext;
         }
 
-        // Set response GRIP values
-        if (requestGrip.isProxied) {
+        const requestGrip: IRequestGrip = {
+            isProxied,
+            isSigned,
+            wsContext,
+        };
+        Object.assign(req, { grip: requestGrip });
+
+        // ## Set response GRIP values
+
+        let startInstruct: () => GripInstruct = () => { throw new GripInstructNotAvailableException(); };
+        if (isProxied) {
 
             let gripInstruct: GripInstruct | null = null;
-            responseGrip.startInstruct = () => {
+            startInstruct = () => {
                 if (gripInstruct != null) {
                     throw new GripInstructAlreadyStartedException();
                 }
@@ -192,7 +185,8 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
                 return gripInstruct;
             }
 
-            // This overrides a writeHead, a function with a complex type declaration.
+            // Monkey-patch methods on response
+
             const resWriteHead = res.writeHead;
             // @ts-ignore
             res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
@@ -223,7 +217,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
             const resEnd = res.end;
             // @ts-ignore
-            res.end = (chunk, encoding, callback) => {
+            res.end = (chunk: any, encoding: BufferEncoding, callback: Function) => {
 
                 if (res.statusCode === 200 && wsContext != null) {
 
@@ -235,16 +229,12 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
                 resEnd.call(res, chunk, encoding, callback);
             }
 
-        } else {
-
-            if (this.isGripProxyRequired) {
-                // NOT PROXIED, needs to fail now
-                res.statusCode = 501;
-                res.end('Not Implemented.\n');
-                return;
-            }
-
         }
+
+        const responseGrip: IResponseGrip = {
+            startInstruct,
+        };
+        Object.assign(res, { grip: responseGrip });
 
     }
 }
