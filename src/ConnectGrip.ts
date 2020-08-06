@@ -13,12 +13,12 @@ import {
     validateSig,
 } from "@fanoutio/grip";
 
-import IConnectGripConfig from "./INextGripConfig";
+import IConnectGripConfig from "./IConnectGripConfig";
 import IRequestGrip from "./IRequestGrip";
 
-import { NextGripApiResponse } from "./NextGripApiResponse";
-import { NextGripApiRequest } from "./NextGripApiRequest";
-import { NextGripApiHandler } from "./NextGripApiHandler";
+import { ConnectGripApiResponse } from "./ConnectGripApiResponse";
+import { ConnectGripApiRequest } from "./ConnectGripApiRequest";
+import { ConnectGripApiHandler } from "./ConnectGripApiHandler";
 import IResponseGrip from "./IResponseGrip";
 import GripInstructNotAvailableException from "./data/GripInstructNotAvailableException";
 import GripInstructAlreadyStartedException from "./data/GripInstructAlreadyStartedException";
@@ -31,7 +31,7 @@ function flattenHeader(value: undefined | string | string[]) {
 }
 
 // @ts-ignore
-export default class NextGrip extends CallableInstance<[IncomingMessage, ServerResponse, Function], void> {
+export default class ConnectGrip extends CallableInstance<[IncomingMessage, ServerResponse, Function], void> {
     gripProxies?: IGripConfig[];
     pubServers?: IPublisherConfig[];
     prefix: string = '';
@@ -54,7 +54,7 @@ export default class NextGrip extends CallableInstance<[IncomingMessage, ServerR
 
     }
 
-    checkGripStatus(req: NextGripApiRequest) {
+    checkGripStatus(req: ConnectGripApiRequest) {
         const gripSigHeader = flattenHeader(req.headers['grip-sig']);
 
         let isProxied = false;
@@ -93,15 +93,15 @@ export default class NextGrip extends CallableInstance<[IncomingMessage, ServerR
 
     exec(req: IncomingMessage, res: ServerResponse, fn: Function) {
 
-        this.handle(req as NextGripApiRequest, res as NextGripApiResponse)
+        this.handle(req as ConnectGripApiRequest, res as ConnectGripApiResponse)
             .then(() => fn());
 
     }
 
-    async handle(req: NextGripApiRequest, res: NextGripApiResponse) {
+    async handle(req: ConnectGripApiRequest, res: ConnectGripApiResponse) {
 
         // Initialize the API request and response with
-        // NextGrip fields.
+        // ConnectGrip fields.
 
         const requestGrip: IRequestGrip = {
             isProxied: false,
@@ -249,8 +249,8 @@ export default class NextGrip extends CallableInstance<[IncomingMessage, ServerR
 
     }
 
-    createGripHandler(fn: NextGripApiHandler) {
-        return async (req: NextGripApiRequest, res: NextGripApiResponse) => {
+    createGripHandler(fn: ConnectGripApiHandler) {
+        return async (req: ConnectGripApiRequest, res: ConnectGripApiResponse) => {
 
             await this.handle(req, res);
             await fn(req, res);

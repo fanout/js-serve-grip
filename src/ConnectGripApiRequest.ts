@@ -1,7 +1,7 @@
 import { IncomingMessage } from "http";
 import IRequestGrip from "./IRequestGrip";
 
-export type NextGripApiRequest = IncomingMessage & {
+export type ConnectGripApiRequest = IncomingMessage & {
     grip: IRequestGrip;
     body?: Buffer | string;
 }

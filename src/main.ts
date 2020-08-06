@@ -1,8 +1,8 @@
 // Flatten and export
 
 // Classes
-export { default as NextGrip } from './NextGrip';
+export { default as ConnectGrip } from './ConnectGrip';
 
-export type { NextGripApiHandler } from './NextGripApiHandler';
-export type { NextGripApiRequest } from './NextGripApiRequest';
-export type { NextGripApiResponse } from './NextGripApiResponse';
+export type { ConnectGripApiHandler } from './ConnectGripApiHandler';
+export type { ConnectGripApiRequest } from './ConnectGripApiRequest';
+export type { ConnectGripApiResponse } from './ConnectGripApiResponse';
