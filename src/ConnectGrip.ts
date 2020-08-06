@@ -18,7 +18,6 @@ import IRequestGrip from "./IRequestGrip";
 
 import { ConnectGripApiResponse } from "./ConnectGripApiResponse";
 import { ConnectGripApiRequest } from "./ConnectGripApiRequest";
-import { ConnectGripApiHandler } from "./ConnectGripApiHandler";
 import IResponseGrip from "./IResponseGrip";
 import GripInstructNotAvailableException from "./data/GripInstructNotAvailableException";
 import GripInstructAlreadyStartedException from "./data/GripInstructAlreadyStartedException";
@@ -247,15 +246,6 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
         }
 
-    }
-
-    createGripHandler(fn: ConnectGripApiHandler) {
-        return async (req: ConnectGripApiRequest, res: ConnectGripApiResponse) => {
-
-            await this.handle(req, res);
-            await fn(req, res);
-
-        };
     }
 }
 
