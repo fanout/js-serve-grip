@@ -139,20 +139,21 @@ extended with `grip` properties.  These provide access to the following:
 
 | Key | Description |
 | --- | --- |
-| `req.isProxied` | A boolean value indicating whether the current request has been called via a Grip proxy. |
-| `req.isSigned` | A boolean value indicating whether the current request is a signed request called via a Grip proxy. |
-| `req.wsContext` | If the current request has been made through WebSocket-Over-HTTP, then a `WebSocketContext` object for the current request. See `@fanoutio/grip` for details on `WebSocketContext`. |
+| `req.grip.isProxied` | A boolean value indicating whether the current request has been called via a Grip proxy. |
+| `req.grip.isSigned` | A boolean value indicating whether the current request is a signed request called via a Grip proxy. |
+| `req.grip.wsContext` | If the current request has been made through WebSocket-Over-HTTP, then a `WebSocketContext` object for the current request. See `@fanoutio/grip` for details on `WebSocketContext`. |
 
 | Key | Description |
 | --- | --- |
-| `res.startInstruct()` | A function that returns an instance of `GripInstruct`, which can be used to issue instructions to the Grip proxy to hold connections. See `@fanoutio/grip` for details on `GripInstruct`. |
+| `res.grip.startInstruct()` | Returns an instance of `GripInstruct`, which can be used to issue instructions to the Grip proxy to hold connections. See `@fanoutio/grip` for details on `GripInstruct`. |
 
-Additionally, you can publish messages to the publishing endpoints that you used when constructing
-`ConnectGrip`, by calling the `getPublisher()` function.
+To publish messages, call `connectGrip.getPublisher()` to obtain a
+`Publisher`. Use it to publish messages using the endpoints and 
+prefix specified to the `ConnectGrip` constructor.
 
 | Key | Description |
 | --- | --- |
-| `connectGrip.getPublisher()` | A function that returns an instance of `Publisher`, which can be used to publish messages to the provided publishing endpoints using the provided prefix. See `@fanoutio/grip` for details on `Publisher`. |
+| `connectGrip.getPublisher()` | Returns an instance of `Publisher`, which can be used to publish messages to the provided publishing endpoints using the provided prefix. See `@fanoutio/grip` for details on `Publisher`. |
 
 ### Examples
 
