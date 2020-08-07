@@ -71,13 +71,13 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
     exec(req: IncomingMessage, res: ServerResponse, fn: Function) {
 
-        this.handle(req as ConnectGripApiRequest, res as ConnectGripApiResponse)
+        this.run(req as ConnectGripApiRequest, res as ConnectGripApiResponse)
             .then(() => fn())
             .catch(err => fn(err instanceof Error ? err : new Error(err)));
 
     }
 
-    async handle(req: ConnectGripApiRequest, res: ConnectGripApiResponse) {
+    async run(req: ConnectGripApiRequest, res: ConnectGripApiResponse) {
 
         // ## Set Request GRIP values
 
