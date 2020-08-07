@@ -103,13 +103,6 @@ This is because in Next.js, your API routes will typically run on a serverless p
 will be recycled after each request. You are advised to construct a singleton instance of the
 middleware in a shared location and reference it from your API routes.  
 
-#### Changes from `express-grip`
-
-If you have used `express-grip` in the past, you will notice that this library no longer
-requires the use of a pre-route and post-route middle.  Consequently, you do not need to
-call `next()` for route handlers that complete their work.  In fact, you should follow the
-standard practice of calling `res.end()` at the end of each of your route handlers.
-
 ### Configuration
 
 `connect-grip` exports a constructor function, `ConnectGrip`.  This constructor takes a
@@ -219,6 +212,13 @@ export default async(req, res) => {
 
 }
 ```
+
+#### Changes from `express-grip`
+
+If you have used `express-grip` in the past, you will notice that this library no longer
+requires the use of pre-route and post-route middlewares.  Consequently, you do not need to
+call `next()` for route handlers that complete their work.  In fact, you should follow the
+standard practice of calling `res.end()` at the end of each of your route handlers.
 
 #### Using additional publishing endpoints
 
