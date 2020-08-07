@@ -14,11 +14,10 @@ import {
 } from "@fanoutio/grip";
 
 import IConnectGripConfig from "./IConnectGripConfig";
-import IRequestGrip from "./IRequestGrip";
 
 import { ConnectGripApiResponse } from "./ConnectGripApiResponse";
 import { ConnectGripApiRequest } from "./ConnectGripApiRequest";
-import IResponseGrip from "./IResponseGrip";
+
 import GripInstructNotAvailableException from "./data/GripInstructNotAvailableException";
 import GripInstructAlreadyStartedException from "./data/GripInstructAlreadyStartedException";
 
@@ -88,7 +87,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
         try {
 
-            // ## Set Request GRIP values
+            // ## Set up req.grip
 
             const gripSigHeader = flattenHeader(req.headers['grip-sig']);
 
@@ -173,29 +172,36 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
                 wsContext = new WebSocketContext(cid, meta, events, this.prefix);
             }
 
-            const requestGrip: IRequestGrip = {
-                isProxied,
-                isSigned,
-                wsContext,
-            };
-            Object.assign(req, { grip: requestGrip });
-
-            // ## Set response GRIP values
-
-            let startInstruct: () => GripInstruct = () => { throw new GripInstructNotAvailableException(); };
-            if (isProxied) {
-
-                let gripInstruct: GripInstruct | null = null;
-                startInstruct = () => {
-                    if (gripInstruct != null) {
-                        throw new GripInstructAlreadyStartedException();
-                    }
-                    gripInstruct = new GripInstruct();
-                    return gripInstruct;
+            Object.assign(req, {
+                grip: {
+                    isProxied,
+                    isSigned,
+                    wsContext,
                 }
+            });
 
-                // Monkey-patch methods on response
+            // ## Set up res.grip
 
+            let gripInstruct: GripInstruct | null = null;
+            Object.assign(res, {
+                grip: {
+                    startInstruct() {
+                        if (isProxied) {
+                            if (gripInstruct != null) {
+                                throw new GripInstructAlreadyStartedException();
+                            }
+                            gripInstruct = new GripInstruct();
+                            return gripInstruct;
+                        } else {
+                            throw new GripInstructNotAvailableException();
+                        }
+                    },
+                }
+            });
+
+            // ## Monkey-patch res methods
+
+            if (isProxied) {
                 const resWriteHead = res.writeHead;
                 // @ts-ignore
                 res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
@@ -248,13 +254,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
                     resEnd.call(res, chunk, encoding, callback);
                 }
-
             }
-
-            const responseGrip: IResponseGrip = {
-                startInstruct,
-            };
-            Object.assign(res, { grip: responseGrip });
 
         } catch(ex) {
             throw ex instanceof Error ? ex : new Error(ex);
