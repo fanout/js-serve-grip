@@ -29,9 +29,12 @@ Import the `ConnectGrip` class and instantiate the middleware. Then install it b
 
 Example:
 ```javascript
+import { express } from "express";
 import { ConnectGrip } from '@fanoutio/connect-grip';
-const connectGrip = new ConnectGrip(/* config */);
 
+const app = express();
+
+const connectGrip = new ConnectGrip(/* config */);
 app.use( connectGrip ); 
 
 app.use( '/path', (res, req) => {
@@ -44,6 +47,8 @@ app.use( '/path', (res, req) => {
     }
 
 });
+
+app.listen(3000);
 ```
 
 #### Installation in Next.js
@@ -51,12 +56,10 @@ app.use( '/path', (res, req) => {
 You may use this library to add Grip functionality to your
 [Next.js API Routes](https://nextjs.org/docs/api-routes/introduction).
 
-Import the `ConnectGrip` class and instantiate the middleware, and then use the process described in
-[API Middlewares](https://nextjs.org/docs/api-routes/api-middlewares) to add the processing to your
-API route.
+Import the `ConnectGrip` class and instantiate the middleware, and then run it in your handler
+before your application logic by calling the async function `connectGrip.run()`.
 
 Example:
-
 `/lib/grip.js`:
 ```javascript
 import { ConnectGrip } from '@fanoutio/connect-grip';
@@ -69,8 +72,7 @@ import { connectGrip } from '/lib/grip';
 
 export default async(req, res) => {
     // Run the middleware
-    // See this function defined at https://nextjs.org/docs/api-routes/api-middlewares
-    await runMiddleware(req, res, connectGrip)
+    await connectGrip.run(req, res);
 
     if (req.grip.isProxied) {
         const gripInstruct = res.grip.startInstruct();
@@ -82,7 +84,7 @@ export default async(req, res) => {
 }
 ```
 
-In Next.js, you must specifically call the middleware from each of your applicable API routes.
+Note: In Next.js, you must specifically call the middleware from each of your applicable API routes.
 This is because in Next.js, your API routes will typically run on a serverless platform, and objects
 will be recycled after each request. You are advised to construct a singleton instance of the
 middleware in a shared location and reference it from your API routes.  
@@ -164,6 +166,55 @@ and Next.js.  Please read the `README.md` files in the corresponding folders for
 example.  
 
 ### Advanced
+
+#### Next.js alternative invocation
+
+As an alternative method of running `connectGrip` in a Next.js API route, since `connectGrip` is
+`connect`-compatible, you may use the process described in
+[API Middlewares](https://nextjs.org/docs/api-routes/api-middlewares#connectexpress-middleware-support).
+This may be useful for example if you have multiple middlewares and you wish to call them in a
+uniform manner.
+
+Example:
+`/lib/grip.js`:
+```javascript
+import { ConnectGrip } from '@fanoutio/connect-grip';
+export const connectGrip = new ConnectGrip(/* config */);
+
+// Helper method to wait for a middleware to execute before continuing
+// And to throw an error when an error happens in a middleware
+// https://nextjs.org/docs/api-routes/api-middlewares#connectexpress-middleware-support
+export function runMiddleware(req, res, fn) {
+    return new Promise((resolve, reject) => {
+        fn(req, res, (result) => {
+            if (result instanceof Error) {
+                return reject(result)
+            }
+
+            return resolve(result)
+        })
+    })
+}
+```
+
+`/pages/api/path.js`:
+```javascript
+import { connectGrip, runMiddleware } from '/lib/grip';
+
+export default async(req, res) => {
+
+    // Run the middleware
+    await runMiddleware(req, res, connectGrip);
+
+    if (req.grip.isProxied) {
+        const gripInstruct = res.grip.startInstruct();
+        gripInstruct.addChannel('test');
+        gripInstruct.setHoldStream();
+        res.end('[stream open]\n');
+    }
+
+}
+```
 
 #### Using additional publishing endpoints
 
