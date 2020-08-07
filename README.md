@@ -1,6 +1,6 @@
 ## connect-grip
 
-Grip library for Node.js, provided as `connect`-compatible _middleware_.
+Grip library for Node.js, provided as `connect`-compatible middleware.
 
 Therefore, this library is usable with frameworks such as the following:
 
@@ -14,6 +14,20 @@ Supported Grip servers include:
 * [Fanout Cloud](https://fanout.io/cloud/)
 
 Authors: Katsuyuki Ohmuro <kats@fanout.io>, Konstantin Bokarius <kon@fanout.io>
+
+### Introduction
+
+[Grip](https://pushpin.org/docs/protocols/grip/) is a protocol that enables a web service to
+delegate realtime push behavior to a proxy component, using HTTP and headers.
+
+`connect-grip` parses the `Grip-Sig` header in any requests to detect if they came through a Grip
+proxy, and provides your route handler with tools to handle such requests.  This includes
+access to information about whether the current request is proxied or is signed, as well as
+methods to issue any hold instructions to the Grip proxy.
+
+Additionally, `connect-grip` also handles
+[WebSocket-Over-HTTP processing](https://pushpin.org/docs/protocols/websocket-over-http/) so
+that WebSocket connections managed by the Grip proxy can be controlled by your route handlers.
 
 ### Installation
 
@@ -96,17 +110,7 @@ requires the use of a pre-route and post-route middle.  Consequently, you do not
 call `next()` for route handlers that complete their work.  In fact, you should follow the
 standard practice of calling `res.end()` at the end of each of your route handlers.
 
-### Usage
-
-`connect-grip` parses the `Grip-Sig` header in any requests to detect if they came from a Grip
-proxy, and provide your route handler with status information about whether the current request
-is proxied or is signed, as well as allow it to issue any hold instructions to the Grip proxy.
-
-Additionally, `connect-grip` also handles
-[WebSocket-Over-HTTP processing](https://pushpin.org/docs/protocols/websocket-over-http/) so
-that WebSockets managed by the Grip proxy can be controlled by your route handlers.
-
-#### Configuration
+### Configuration
 
 `connect-grip` exports a constructor function, `ConnectGrip`.  This constructor takes a
 configuration object that can be used to configure the instance, such as the Grip proxies to use
@@ -135,7 +139,7 @@ Available options:
 In most cases your application will construct a singleton instance of this class and use it as
 the middleware.
 
-#### Handling a route
+### Handling a route
 
 After the middleware has run, your handler will receive `req` and `res` objects that have been
 extended with `grip` properties.  These provide access to the following:
