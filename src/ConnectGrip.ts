@@ -202,10 +202,21 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
                 if (statusCode === 200 && wsContext != null) {
                     obj = Object.assign({}, obj, wsContext.toHeaders());
-                }
-
-                if (gripInstruct != null) {
-                    obj = Object.assign({}, obj, gripInstruct.toHeaders());
+                } else {
+                    if (gripInstruct != null) {
+                        if (statusCode === 304) {
+                            // Code 304 only allows certain headers.
+                            // Some web servers strictly enforce this.
+                            // In that case we won't be able to use
+                            // Grip- headers to talk to the proxy.
+                            // Switch to code 200 and use Grip-Status
+                            // to specify intended status.
+                            statusCode = 200;
+                            reason = 'OK';
+                            gripInstruct.setStatus(304);
+                        }
+                        obj = Object.assign({}, obj, gripInstruct.toHeaders());
+                    }
                 }
 
                 if (typeof reason === 'string') {
