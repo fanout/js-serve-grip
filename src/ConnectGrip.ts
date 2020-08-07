@@ -73,7 +73,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
         this.handle(req as ConnectGripApiRequest, res as ConnectGripApiResponse)
             .then(() => fn())
-            .catch(err => fn(err));
+            .catch(err => fn(err instanceof Error ? err : new Error(err)));
 
     }
 
