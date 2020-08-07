@@ -71,181 +71,194 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
     exec(req: IncomingMessage, res: ServerResponse, fn: Function) {
 
+        let err: Error | undefined;
         this.run(req as ConnectGripApiRequest, res as ConnectGripApiResponse)
-            .then(() => fn())
-            .catch(err => fn(err instanceof Error ? err : new Error(err)));
+            .catch(ex => err = ex)
+            .then(() => {
+                if (err !== undefined) {
+                    fn(err);
+                } else {
+                    fn();
+                }
+            });
 
     }
 
     async run(req: ConnectGripApiRequest, res: ConnectGripApiResponse) {
 
-        // ## Set Request GRIP values
+        try {
 
-        const gripSigHeader = flattenHeader(req.headers['grip-sig']);
+            // ## Set Request GRIP values
 
-        let isProxied = false;
-        let isSigned = false;
-        if (gripSigHeader !== undefined && Array.isArray(this.gripProxies) && this.gripProxies.length > 0) {
-            if (this.gripProxies.every(proxy => proxy.key)) {
-                // If all proxies have keys, then only consider the request
-                // signed if at least one of them has signed it
-                if (this.gripProxies.some(proxy => validateSig(gripSigHeader, proxy.key))) {
+            const gripSigHeader = flattenHeader(req.headers['grip-sig']);
+
+            let isProxied = false;
+            let isSigned = false;
+            if (gripSigHeader !== undefined && Array.isArray(this.gripProxies) && this.gripProxies.length > 0) {
+                if (this.gripProxies.every(proxy => proxy.key)) {
+                    // If all proxies have keys, then only consider the request
+                    // signed if at least one of them has signed it
+                    if (this.gripProxies.some(proxy => validateSig(gripSigHeader, proxy.key))) {
+                        isProxied = true;
+                        isSigned = true;
+                    }
+                } else {
                     isProxied = true;
-                    isSigned = true;
                 }
-            } else {
-                isProxied = true;
             }
-        }
 
-        if (!isProxied && this.isGripProxyRequired) {
-            // If we require a Grip proxy but we detect there is
-            // not one, we needs to fail now
-            res.statusCode = 501;
-            res.end('Not Implemented.\n');
-            return;
-        }
-
-        let contentTypeHeader = flattenHeader(req.headers['content-type']);
-        if (contentTypeHeader != null) {
-            const at = contentTypeHeader.indexOf(';');
-            if (at >= 0) {
-                contentTypeHeader = contentTypeHeader.substring(0, at);
-            }
-        }
-
-        const acceptTypesHeader = flattenHeader(req.headers['accept']);
-        const acceptTypes = acceptTypesHeader?.split(',')
-            .map(item => item.trim());
-
-        let wsContext: WebSocketContext | null = null;
-
-        if (req.method === 'POST' && (
-            contentTypeHeader === CONTENT_TYPE_WEBSOCKET_EVENTS ||
-            acceptTypes?.includes(CONTENT_TYPE_WEBSOCKET_EVENTS)
-        )) {
-            const cid = flattenHeader(req.headers['connection-id']);
-            if (cid == null) {
-                res.statusCode = 400;
-                res.end('WebSocket event missing connection-id header.\n');
+            if (!isProxied && this.isGripProxyRequired) {
+                // If we require a Grip proxy but we detect there is
+                // not one, we needs to fail now
+                res.statusCode = 501;
+                res.end('Not Implemented.\n');
                 return;
             }
 
-            // Handle meta keys
-            const meta = {};
-            for (const [key, value] of Object.entries(req.headers)) {
-                const lKey = key.toLowerCase();
-                if (lKey.startsWith('meta-')) {
-                    meta[lKey.substring(5)] = value;
+            let contentTypeHeader = flattenHeader(req.headers['content-type']);
+            if (contentTypeHeader != null) {
+                const at = contentTypeHeader.indexOf(';');
+                if (at >= 0) {
+                    contentTypeHeader = contentTypeHeader.substring(0, at);
                 }
             }
 
-            if (req.body == null) {
-                req.body = await new Promise(resolve => {
-                    const bodySegments: any[] = [];
-                    req.on('data', (chunk) => {
-                        bodySegments.push(chunk);
-                    });
-                    req.on('end', () => {
-                        const bodyBuffer = Buffer.concat(bodySegments);
-                        resolve(bodyBuffer);
-                    });
-                });
-            }
+            const acceptTypesHeader = flattenHeader(req.headers['accept']);
+            const acceptTypes = acceptTypesHeader?.split(',')
+                .map(item => item.trim());
 
-            let events = null;
-            try {
-                events = decodeWebSocketEvents(req.body!);
-            } catch (err) {
-                res.statusCode = 400;
-                res.end('Error parsing WebSocket events.\n');
-                return;
-            }
-            wsContext = new WebSocketContext(cid, meta, events, this.prefix);
-        }
+            let wsContext: WebSocketContext | null = null;
 
-        const requestGrip: IRequestGrip = {
-            isProxied,
-            isSigned,
-            wsContext,
-        };
-        Object.assign(req, { grip: requestGrip });
-
-        // ## Set response GRIP values
-
-        let startInstruct: () => GripInstruct = () => { throw new GripInstructNotAvailableException(); };
-        if (isProxied) {
-
-            let gripInstruct: GripInstruct | null = null;
-            startInstruct = () => {
-                if (gripInstruct != null) {
-                    throw new GripInstructAlreadyStartedException();
-                }
-                gripInstruct = new GripInstruct();
-                return gripInstruct;
-            }
-
-            // Monkey-patch methods on response
-
-            const resWriteHead = res.writeHead;
-            // @ts-ignore
-            res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
-
-                if (typeof reason === 'string') {
-                    // assume this was called like this:
-                    // writeHead(statusCode, reasonPhrase[, headers])
-                } else {
-                    // this was called like this:
-                    // writeHead(statusCode[, headers])
-                    obj = reason;
+            if (req.method === 'POST' && (
+                contentTypeHeader === CONTENT_TYPE_WEBSOCKET_EVENTS ||
+                acceptTypes?.includes(CONTENT_TYPE_WEBSOCKET_EVENTS)
+            )) {
+                const cid = flattenHeader(req.headers['connection-id']);
+                if (cid == null) {
+                    res.statusCode = 400;
+                    res.end('WebSocket event missing connection-id header.\n');
+                    return;
                 }
 
-                if (statusCode === 200 && wsContext != null) {
-                    obj = Object.assign({}, obj, wsContext.toHeaders());
-                } else {
-                    if (gripInstruct != null) {
-                        if (statusCode === 304) {
-                            // Code 304 only allows certain headers.
-                            // Some web servers strictly enforce this.
-                            // In that case we won't be able to use
-                            // Grip- headers to talk to the proxy.
-                            // Switch to code 200 and use Grip-Status
-                            // to specify intended status.
-                            statusCode = 200;
-                            reason = 'OK';
-                            gripInstruct.setStatus(304);
-                        }
-                        obj = Object.assign({}, obj, gripInstruct.toHeaders());
+                // Handle meta keys
+                const meta = {};
+                for (const [key, value] of Object.entries(req.headers)) {
+                    const lKey = key.toLowerCase();
+                    if (lKey.startsWith('meta-')) {
+                        meta[lKey.substring(5)] = value;
                     }
                 }
 
-                if (typeof reason === 'string') {
-                    resWriteHead.call(res, statusCode, reason, obj);
-                } else {
-                    resWriteHead.call(res, statusCode, obj);
-                }
-            };
-
-            const resEnd = res.end;
-            // @ts-ignore
-            res.end = (chunk: any, encoding: BufferEncoding, callback: Function) => {
-
-                if (res.statusCode === 200 && wsContext != null) {
-
-                    const events = wsContext.getOutgoingEvents();
-                    res.write(encodeWebSocketEvents(events));
-
+                if (req.body == null) {
+                    req.body = await new Promise(resolve => {
+                        const bodySegments: any[] = [];
+                        req.on('data', (chunk) => {
+                            bodySegments.push(chunk);
+                        });
+                        req.on('end', () => {
+                            const bodyBuffer = Buffer.concat(bodySegments);
+                            resolve(bodyBuffer);
+                        });
+                    });
                 }
 
-                resEnd.call(res, chunk, encoding, callback);
+                let events = null;
+                try {
+                    events = decodeWebSocketEvents(req.body!);
+                } catch (err) {
+                    res.statusCode = 400;
+                    res.end('Error parsing WebSocket events.\n');
+                    return;
+                }
+                wsContext = new WebSocketContext(cid, meta, events, this.prefix);
             }
 
-        }
+            const requestGrip: IRequestGrip = {
+                isProxied,
+                isSigned,
+                wsContext,
+            };
+            Object.assign(req, { grip: requestGrip });
 
-        const responseGrip: IResponseGrip = {
-            startInstruct,
-        };
-        Object.assign(res, { grip: responseGrip });
+            // ## Set response GRIP values
+
+            let startInstruct: () => GripInstruct = () => { throw new GripInstructNotAvailableException(); };
+            if (isProxied) {
+
+                let gripInstruct: GripInstruct | null = null;
+                startInstruct = () => {
+                    if (gripInstruct != null) {
+                        throw new GripInstructAlreadyStartedException();
+                    }
+                    gripInstruct = new GripInstruct();
+                    return gripInstruct;
+                }
+
+                // Monkey-patch methods on response
+
+                const resWriteHead = res.writeHead;
+                // @ts-ignore
+                res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
+
+                    if (typeof reason === 'string') {
+                        // assume this was called like this:
+                        // writeHead(statusCode, reasonPhrase[, headers])
+                    } else {
+                        // this was called like this:
+                        // writeHead(statusCode[, headers])
+                        obj = reason;
+                    }
+
+                    if (statusCode === 200 && wsContext != null) {
+                        obj = Object.assign({}, obj, wsContext.toHeaders());
+                    } else {
+                        if (gripInstruct != null) {
+                            if (statusCode === 304) {
+                                // Code 304 only allows certain headers.
+                                // Some web servers strictly enforce this.
+                                // In that case we won't be able to use
+                                // Grip- headers to talk to the proxy.
+                                // Switch to code 200 and use Grip-Status
+                                // to specify intended status.
+                                statusCode = 200;
+                                reason = 'OK';
+                                gripInstruct.setStatus(304);
+                            }
+                            obj = Object.assign({}, obj, gripInstruct.toHeaders());
+                        }
+                    }
+
+                    if (typeof reason === 'string') {
+                        resWriteHead.call(res, statusCode, reason, obj);
+                    } else {
+                        resWriteHead.call(res, statusCode, obj);
+                    }
+                };
+
+                const resEnd = res.end;
+                // @ts-ignore
+                res.end = (chunk: any, encoding: BufferEncoding, callback: Function) => {
+
+                    if (res.statusCode === 200 && wsContext != null) {
+
+                        const events = wsContext.getOutgoingEvents();
+                        res.write(encodeWebSocketEvents(events));
+
+                    }
+
+                    resEnd.call(res, chunk, encoding, callback);
+                }
+
+            }
+
+            const responseGrip: IResponseGrip = {
+                startInstruct,
+            };
+            Object.assign(res, { grip: responseGrip });
+
+        } catch(ex) {
+            throw ex instanceof Error ? ex : new Error(ex);
+        }
 
     }
 }
