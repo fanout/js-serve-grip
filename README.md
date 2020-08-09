@@ -157,11 +157,9 @@ prefix specified to the `ConnectGrip` constructor.
 
 ### Examples
 
-(under construction)
-
-This repository will contain examples to illustrate the use of `connect-grip` in Connect / Express
-and Next.js.  Please read the `README.md` files in the corresponding folders for details about each
-example.  
+This repository contains examples to illustrate the use of `connect-grip` in Connect / Express
+and Next.js, which can be found in the `examples` directory.  For details on each example, please
+read the `README.md` files in the corresponding directories.  
 
 ### Advanced
 
