@@ -1,0 +1,15 @@
+{
+  "name": "express-http",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Example for using connect-grip with HTTP formats in Express",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "author": "Katsuyuki Ohmuro <kats@fanout.io>",
+  "license": "MIT",
+  "dependencies": {
+    "@fanoutio/connect-grip": "file:../..",
+    "express": "^4.17.1"
+  }
+}

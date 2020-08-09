@@ -1,0 +1,17 @@
+{
+  "name": "next-http",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Example for using connect-grip with HTTP formats in Next.js",
+  "scripts": {
+    "dev": "next"
+  },
+  "author": "Katsuyuki Ohmuro <kats@fanout.io>",
+  "license": "MIT",
+  "dependencies": {
+    "@fanoutio/connect-grip": "file:../..",
+    "next": "^9.5.1",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
+  }
+}
