@@ -1,4 +1,8 @@
-import { IncomingMessage, ServerResponse, OutgoingHttpHeaders } from "http";
+import {
+    IncomingMessage,
+    ServerResponse,
+    OutgoingHttpHeaders,
+} from "http";
 import * as CallableInstance from "callable-instance";
 
 import {
@@ -18,8 +22,8 @@ import IConnectGripConfig from "./IConnectGripConfig";
 import { ConnectGripApiResponse } from "./ConnectGripApiResponse";
 import { ConnectGripApiRequest } from "./ConnectGripApiRequest";
 
-import GripInstructNotAvailableException from "./data/GripInstructNotAvailableException";
-import GripInstructAlreadyStartedException from "./data/GripInstructAlreadyStartedException";
+import GripInstructNotAvailableException from "./GripInstructNotAvailableException";
+import GripInstructAlreadyStartedException from "./GripInstructAlreadyStartedException";
 
 const CONTENT_TYPE_WEBSOCKET_EVENTS = 'application/websocket-events';
 
