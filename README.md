@@ -1,6 +1,6 @@
 ## connect-grip
 
-Grip library for Node.js, provided as `connect`-compatible middleware.
+GRIP library for Node.js, provided as `connect`-compatible middleware.
 
 Therefore, this library is usable with frameworks such as the following:
 
@@ -8,7 +8,7 @@ Therefore, this library is usable with frameworks such as the following:
 * [Express](https://expressjs.com/)
 * [Next.js](https://nextjs.org/)
 
-Supported Grip servers include:
+Supported GRIP servers include:
 
 * [Pushpin](http://pushpin.org/)
 * [Fanout Cloud](https://fanout.io/cloud/)
@@ -17,17 +17,17 @@ Authors: Katsuyuki Ohmuro <kats@fanout.io>, Konstantin Bokarius <kon@fanout.io>
 
 ### Introduction
 
-[Grip](https://pushpin.org/docs/protocols/grip/) is a protocol that enables a web service to
+[GRIP](https://pushpin.org/docs/protocols/grip/) is a protocol that enables a web service to
 delegate realtime push behavior to a proxy component, using HTTP and headers.
 
 `connect-grip` parses the `Grip-Sig` header in any requests to detect if they came through a Grip
 proxy, and provides your route handler with tools to handle such requests.  This includes
 access to information about whether the current request is proxied or is signed, as well as
-methods to issue any hold instructions to the Grip proxy.
+methods to issue any hold instructions to the GRIP proxy.
 
 Additionally, `connect-grip` also handles
 [WebSocket-Over-HTTP processing](https://pushpin.org/docs/protocols/websocket-over-http/) so
-that WebSocket connections managed by the Grip proxy can be controlled by your route handlers.
+that WebSocket connections managed by the GRIP proxy can be controlled by your route handlers.
 
 ### Installation
 
@@ -67,7 +67,7 @@ app.listen(3000);
 
 #### Installation in Next.js
 
-You may use this library to add Grip functionality to your
+You may use this library to add GRIP functionality to your
 [Next.js API Routes](https://nextjs.org/docs/api-routes/introduction).
 
 Import the `ConnectGrip` class and instantiate the middleware, and then run it in your handler
@@ -106,8 +106,8 @@ middleware in a shared location and reference it from your API routes.
 ### Configuration
 
 `connect-grip` exports a constructor function, `ConnectGrip`.  This constructor takes a
-configuration object that can be used to configure the instance, such as the Grip proxies to use
-for publishing or whether incoming requests should require a Grip proxy.
+configuration object that can be used to configure the instance, such as the GRIP proxies to use
+for publishing or whether incoming requests should require a GRIP proxy.
 
 ```javascript
 import { ConnectGrip } from '@fanoutio/connect-grip';
@@ -124,8 +124,8 @@ const connectGrip = new ConnectGrip({
 Available options:
 | Key | Value |
 | --- | --- |
-| `gripProxies` | An array of objects that define Grip proxies, used to publish messages. See above for an example. |
-| `gripProxyRequired` | A boolean value representing whether all incoming requests should require that they be called behind a Grip proxy.  If this is true and a Grip proxy is not detected, then a `501 Not Implemented` error will be issued. Defaults to `false`. |
+| `gripProxies` | An array of objects that define GRIP proxies, used to publish messages. See above for an example. |
+| `gripProxyRequired` | A boolean value representing whether all incoming requests should require that they be called behind a GRIP proxy.  If this is true and a GRIP proxy is not detected, then a `501 Not Implemented` error will be issued. Defaults to `false`. |
 | `gripPrefix` | An optional string that will be prepended to the name of channels being published to. This can be used for namespacing. Defaults to `''`. |
 
 In most cases your application will construct a singleton instance of this class and use it as
@@ -138,13 +138,13 @@ extended with `grip` properties.  These provide access to the following:
 
 | Key | Description |
 | --- | --- |
-| `req.grip.isProxied` | A boolean value indicating whether the current request has been called via a Grip proxy. |
-| `req.grip.isSigned` | A boolean value indicating whether the current request is a signed request called via a Grip proxy. |
+| `req.grip.isProxied` | A boolean value indicating whether the current request has been called via a GRIP proxy. |
+| `req.grip.isSigned` | A boolean value indicating whether the current request is a signed request called via a GRIP proxy. |
 | `req.grip.wsContext` | If the current request has been made through WebSocket-Over-HTTP, then a `WebSocketContext` object for the current request. See `@fanoutio/grip` for details on `WebSocketContext`. |
 
 | Key | Description |
 | --- | --- |
-| `res.grip.startInstruct()` | Returns an instance of `GripInstruct`, which can be used to issue instructions to the Grip proxy to hold connections. See `@fanoutio/grip` for details on `GripInstruct`. |
+| `res.grip.startInstruct()` | Returns an instance of `GripInstruct`, which can be used to issue instructions to the GRIP proxy to hold connections. See `@fanoutio/grip` for details on `GripInstruct`. |
 
 To publish messages, call `connectGrip.getPublisher()` to obtain a
 `Publisher`. Use it to publish messages using the endpoints and 

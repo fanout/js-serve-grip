@@ -105,7 +105,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
             }
 
             if (!isProxied && this.isGripProxyRequired) {
-                // If we require a Grip proxy but we detect there is
+                // If we require a GRIP proxy but we detect there is
                 // not one, we needs to fail now
                 res.statusCode = 501;
                 res.end('Not Implemented.\n');
