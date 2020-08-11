@@ -127,7 +127,6 @@ Available options:
 | `gripProxies` | An array of objects that define Grip proxies, used to publish messages. See above for an example. |
 | `gripProxyRequired` | A boolean value representing whether all incoming requests should require that they be called behind a Grip proxy.  If this is true and a Grip proxy is not detected, then a `501 Not Implemented` error will be issued. Defaults to `false`. |
 | `gripPrefix` | An optional string that will be prepended to the name of channels being published to. This can be used for namespacing. Defaults to `''`. |
-| `gripPubServers` | (advanced) An array of objects that define additional publishing endpoints that can be used to publish messages. See the advanced section below for an example. |
 
 In most cases your application will construct a singleton instance of this class and use it as
 the middleware.
@@ -218,19 +217,3 @@ If you have used `express-grip` in the past, you will notice that this library n
 requires the use of pre-route and post-route middlewares.  Consequently, you do not need to
 call `next()` for route handlers that complete their work.  In fact, you should follow the
 standard practice of calling `res.end()` at the end of each of your route handlers.
-
-#### Using additional publishing endpoints
-
-You may publish to additional publishing endpoints by providing them as the `gripPubServers` array
-when constructing `ConnectGrip`.
-
-```javascript
-import { ConnectGrip } from '@fanoutio/connect-grip';
-const connectGrip = new ConnectGrip({
-    gripPubServers: [{
-        uri: 'https://example.com/path/to/endpoint', // Publishing endpoint
-        iss: '<iss>',  // (optional) Needed for servers that require authorization
-        key: '<key>',  // (optional) Needed for servers that require authorization
-    }],
-});
-```

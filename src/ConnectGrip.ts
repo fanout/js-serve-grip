@@ -8,7 +8,6 @@ import * as CallableInstance from "callable-instance";
 import {
     GripInstruct,
     IGripConfig,
-    IPublisherConfig,
     PrefixedPublisher,
     Publisher,
     WebSocketContext,
@@ -37,7 +36,6 @@ function flattenHeader(value: undefined | string | string[]) {
 // @ts-ignore
 export default class ConnectGrip extends CallableInstance<[IncomingMessage, ServerResponse, Function], void> {
     gripProxies?: IGripConfig[];
-    pubServers?: IPublisherConfig[];
     prefix: string = '';
     isGripProxyRequired: boolean = false;
     _publisher?: PrefixedPublisher;
@@ -49,10 +47,9 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
     applyConfig(config: IConnectGripConfig = {}) {
 
-        const { gripProxies, gripPubServers, gripProxyRequired = false, gripPrefix = '' } = config;
+        const { gripProxies, gripProxyRequired = false, gripPrefix = '' } = config;
 
         this.gripProxies = gripProxies;
-        this.pubServers = gripPubServers;
         this.isGripProxyRequired = gripProxyRequired;
         this.prefix = gripPrefix;
 
@@ -63,9 +60,6 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
             const publisher = new Publisher();
             if (this.gripProxies != null) {
                 publisher.applyConfig(this.gripProxies);
-            }
-            if (this.pubServers != null) {
-                publisher.applyConfig(this.pubServers);
             }
             this._publisher = publisher.buildPrefixedPublisher(this.prefix) as PrefixedPublisher;
         }
