@@ -8,7 +8,6 @@ import * as CallableInstance from "callable-instance";
 import {
     GripInstruct,
     IGripConfig,
-    PrefixedPublisher,
     Publisher,
     WebSocketContext,
     decodeWebSocketEvents,
@@ -23,6 +22,8 @@ import { ConnectGripApiRequest } from "./ConnectGripApiRequest";
 
 import GripInstructNotAvailableException from "./GripInstructNotAvailableException";
 import GripInstructAlreadyStartedException from "./GripInstructAlreadyStartedException";
+
+import PrefixedPublisher from "./PrefixedPublisher";
 
 const CONTENT_TYPE_WEBSOCKET_EVENTS = 'application/websocket-events';
 
@@ -61,7 +62,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
             if (this.gripProxies != null) {
                 publisher.applyConfig(this.gripProxies);
             }
-            this._publisher = publisher.buildPrefixedPublisher(this.prefix) as PrefixedPublisher;
+            this._publisher = new PrefixedPublisher(publisher, this.prefix);
         }
         return this._publisher;
     }
