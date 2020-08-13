@@ -13,6 +13,7 @@ import {
     decodeWebSocketEvents,
     encodeWebSocketEvents,
     validateSig,
+    Auth,
 } from "@fanoutio/grip";
 
 import IConnectGripConfig from "./IConnectGripConfig";
@@ -36,7 +37,7 @@ function flattenHeader(value: undefined | string | string[]) {
 
 // @ts-ignore
 export default class ConnectGrip extends CallableInstance<[IncomingMessage, ServerResponse, Function], void> {
-    gripProxies?: IGripConfig[];
+    gripProxies?: string | IGripConfig | IGripConfig[];
     prefix: string = '';
     isGripProxyRequired: boolean = false;
     _publisher?: PrefixedPublisher;
@@ -48,11 +49,19 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
     applyConfig(config: IConnectGripConfig = {}) {
 
-        const { gripProxies, gripProxyRequired = false, gripPrefix = '' } = config;
+        const { grip, gripProxyRequired = false, prefix = '' } = config;
 
-        this.gripProxies = gripProxies;
+        if (this._publisher != null) {
+            throw new Error("applyConfig called on ConnectGrip that already has an instantiated publisher.");
+        }
+
+        if (grip instanceof Publisher) {
+            this._publisher = new PrefixedPublisher(grip, prefix);
+        } else {
+            this.gripProxies = grip;
+        }
         this.isGripProxyRequired = gripProxyRequired;
-        this.prefix = gripPrefix;
+        this.prefix = prefix;
 
     }
 
@@ -92,17 +101,28 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
             let isProxied = false;
             let isSigned = false;
-            if (gripSigHeader !== undefined && Array.isArray(this.gripProxies) && this.gripProxies.length > 0) {
-                if (this.gripProxies.every(proxy => proxy.key)) {
-                    // If all proxies have keys, then only consider the request
-                    // signed if at least one of them has signed it
-                    if (this.gripProxies.some(proxy => validateSig(gripSigHeader, proxy.key))) {
+            if (gripSigHeader !== undefined) {
+
+                const publisher = this.getPublisher();
+                const clients = publisher.getClients();
+
+                if (clients.length > 0) {
+
+                    if (clients.every(client =>
+                        client.auth instanceof Auth.Jwt &&
+                        client.auth.key != null
+                    )) {
+                        // If all proxies have keys, then only consider the request
+                        // signed if at least one of them has signed it
+                        if (clients.some(client => validateSig(gripSigHeader, (client.auth as Auth.Jwt).key))) {
+                            isProxied = true;
+                            isSigned = true;
+                        }
+                    } else {
                         isProxied = true;
-                        isSigned = true;
                     }
-                } else {
-                    isProxied = true;
                 }
+
             }
 
             if (!isProxied && this.isGripProxyRequired) {

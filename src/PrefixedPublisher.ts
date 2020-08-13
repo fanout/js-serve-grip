@@ -19,6 +19,10 @@ export default class PrefixedPublisher {
         this.prefix = prefix;
     }
 
+    public getClients() {
+        return this.publisher.clients;
+    }
+
     public async publish(channel: string, item: IItem) {
         await this.publisher.publish(
             this.prefix + channel,

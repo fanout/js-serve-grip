@@ -112,11 +112,11 @@ for publishing or whether incoming requests should require a GRIP proxy.
 ```javascript
 import { ConnectGrip } from '@fanoutio/connect-grip';
 const connectGrip = new ConnectGrip({
-    gripProxies: [{
+    grip: {
         control_uri: 'https://api.fanout.io/realm/<realm-name>/publish/', // Publishing endpoint
         control_iss: '<realm-name>', // (optional) Needed for servers that require authorization
         key: '<realm-key>',          // (optinoal) Needed for servers that require authorization
-    }],
+    },
     isGripProxyRequired: true,
 });
 ```
@@ -124,12 +124,28 @@ const connectGrip = new ConnectGrip({
 Available options:
 | Key | Value |
 | --- | --- |
-| `gripProxies` | An array of objects that define GRIP proxies, used to publish messages. See above for an example. |
+| `grip` | A definition of GRIP proxies used to publish messages, or a preconfigured Publisher object from `@fanoutio/grip`. See below for details. |
 | `gripProxyRequired` | A boolean value representing whether all incoming requests should require that they be called behind a GRIP proxy.  If this is true and a GRIP proxy is not detected, then a `501 Not Implemented` error will be issued. Defaults to `false`. |
-| `gripPrefix` | An optional string that will be prepended to the name of channels being published to. This can be used for namespacing. Defaults to `''`. |
+| `prefix` | An optional string that will be prepended to the name of channels being published to. This can be used for namespacing. Defaults to `''`. |
 
 In most cases your application will construct a singleton instance of this class and use it as
 the middleware.
+
+The `grip` parameter may be provided as any of the following:
+
+1. An object with the following fields:
+
+| Key | Value |
+| --- | --- |
+| `control_uri` | Publishing endpoint for the GRIP proxy. |
+| `control_iss` | A claim string that is needed for servers that require authorization. For Fanout Cloud, this is the Realm ID. |
+| `key` | A key string that is needed for servers that require authorization. For Fanout Cloud, this is the Realm Key. |
+
+2. An array of such objects.
+
+3. A GRIP URI, which is a string that encodes the above as a single string.
+
+4. A `Publisher` object that you have instantiated and configrued yourself, from `@fanoutio/grip`.
 
 ### Handling a route
 

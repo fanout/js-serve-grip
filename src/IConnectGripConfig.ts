@@ -1,7 +1,10 @@
-import { IGripConfig } from "@fanoutio/grip";
+import {
+    IGripConfig,
+    Publisher,
+} from "@fanoutio/grip";
 
 export default interface IConnectGripConfig {
-    gripProxies?: IGripConfig[];
+    grip?: string | IGripConfig | IGripConfig[] | Publisher;
     gripProxyRequired?: boolean;
-    gripPrefix?: string;
+    prefix?: string;
 }

@@ -9,9 +9,9 @@ const PUSHPIN_URL = "http://localhost:5561/";
 const app = express();
 
 const connectGrip = new ConnectGrip({
-    gripProxies: [{
+    grip: {
         control_uri: PUSHPIN_URL,
-    }],
+    },
 });
 
 app.use(connectGrip);
