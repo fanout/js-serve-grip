@@ -93,6 +93,12 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
     async run(req: ConnectGripApiRequest, res: ConnectGripApiResponse) {
 
+        if (req.grip != null) {
+            // This would indicate that we are already running for this request.
+            // We don't install ourselves multiple times.
+            return;
+        }
+
         try {
 
             // ## Set up req.grip
