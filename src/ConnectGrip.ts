@@ -108,6 +108,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
             let isProxied = false;
             let isSigned = false;
+            let needsSigned = false;
             if (gripSigHeader !== undefined) {
 
                 const publisher = this.getPublisher();
@@ -119,6 +120,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
                         client.auth instanceof Auth.Jwt &&
                         client.auth.key != null
                     )) {
+                        needsSigned = true;
                         // If all proxies have keys, then only consider the request
                         // signed if at least one of them has signed it
                         if (clients.some(client => validateSig(gripSigHeader, (client.auth as Auth.Jwt).key))) {
@@ -202,6 +204,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
                 grip: {
                     isProxied,
                     isSigned,
+                    needsSigned,
                     wsContext,
                 }
             });
