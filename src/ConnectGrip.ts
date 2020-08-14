@@ -37,10 +37,10 @@ function flattenHeader(value: undefined | string | string[]) {
 
 // @ts-ignore
 export default class ConnectGrip extends CallableInstance<[IncomingMessage, ServerResponse, Function], void> {
-    gripProxies?: string | IGripConfig | IGripConfig[];
+    gripProxies?: string | IGripConfig | IGripConfig[] | Publisher;
     prefix: string = '';
     isGripProxyRequired: boolean = false;
-    _publisher?: PrefixedPublisher;
+    _publisher?: Publisher;
 
     constructor(config?: IConnectGripConfig) {
         super('exec');
@@ -55,21 +55,22 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
             throw new Error("applyConfig called on ConnectGrip that already has an instantiated publisher.");
         }
 
-        if (grip instanceof Publisher) {
-            this._publisher = new PrefixedPublisher(grip, prefix);
-        } else {
-            this.gripProxies = grip;
-        }
+        this.gripProxies = grip;
         this.isGripProxyRequired = gripProxyRequired;
         this.prefix = prefix;
 
     }
 
-    getPublisher(): PrefixedPublisher {
+    getPublisher(): Publisher {
         if (this._publisher == null) {
-            const publisher = new Publisher();
-            if (this.gripProxies != null) {
-                publisher.applyConfig(this.gripProxies);
+            let publisher: Publisher;
+            if (this.gripProxies instanceof Publisher) {
+                publisher = this.gripProxies;
+            } else {
+                publisher = new Publisher();
+                if (this.gripProxies != null) {
+                    publisher.applyConfig(this.gripProxies);
+                }
             }
             this._publisher = new PrefixedPublisher(publisher, this.prefix);
         }
@@ -110,7 +111,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
             if (gripSigHeader !== undefined) {
 
                 const publisher = this.getPublisher();
-                const clients = publisher.getClients();
+                const clients = publisher.clients;
 
                 if (clients.length > 0) {
 
