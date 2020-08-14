@@ -13,7 +13,7 @@ import {
     decodeWebSocketEvents,
     encodeWebSocketEvents,
     validateSig,
-    Auth,
+    Auth, Channel,
 } from "@fanoutio/grip";
 
 import IConnectGripConfig from "./IConnectGripConfig";
@@ -259,6 +259,8 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
                                 reason = 'OK';
                                 gripInstruct.setStatus(304);
                             }
+                            // Apply prefix to channel names
+                            gripInstruct.channels = gripInstruct.channels.map(ch => new Channel(this.prefix + ch.name, ch.prevId));
                             obj = Object.assign({}, obj, gripInstruct.toHeaders());
                         }
                     }
