@@ -3,7 +3,7 @@ import {
     ServerResponse,
     OutgoingHttpHeaders,
 } from "http";
-import * as CallableInstance from "callable-instance";
+import CallableInstance from "callable-instance";
 
 import {
     GripInstruct,
@@ -13,7 +13,8 @@ import {
     decodeWebSocketEvents,
     encodeWebSocketEvents,
     validateSig,
-    Auth, Channel,
+    Auth,
+    Channel,
 } from "@fanoutio/grip";
 
 import IConnectGripConfig from "./IConnectGripConfig";
@@ -28,6 +29,10 @@ import PrefixedPublisher from "./PrefixedPublisher";
 
 const CONTENT_TYPE_WEBSOCKET_EVENTS = 'application/websocket-events';
 
+type NextStandardFunction = () => void;
+type NextErrorFunction = (e: Error) => void;
+type NextFunction = NextStandardFunction | NextErrorFunction;
+
 function flattenHeader(value: undefined | string | string[]) {
     if (Array.isArray(value)) {
         return value[0];
@@ -36,7 +41,7 @@ function flattenHeader(value: undefined | string | string[]) {
 }
 
 // @ts-ignore
-export default class ConnectGrip extends CallableInstance<[IncomingMessage, ServerResponse, Function], void> {
+export default class ConnectGrip extends CallableInstance<[IncomingMessage, ServerResponse, NextFunction], void> {
     gripProxies?: string | IGripConfig | IGripConfig[] | Publisher;
     prefix: string = '';
     isGripProxyRequired: boolean = false;
@@ -77,16 +82,16 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
         return this._publisher;
     }
 
-    exec(req: IncomingMessage, res: ServerResponse, fn: Function) {
+    exec(req: IncomingMessage, res: ServerResponse, fn: NextFunction) {
 
         let err: Error | undefined;
         this.run(req as ConnectGripApiRequest, res as ConnectGripApiResponse)
             .catch(ex => err = ex)
             .then(() => {
                 if (err !== undefined) {
-                    fn(err);
+                    (fn as NextErrorFunction)(err);
                 } else {
-                    fn();
+                    (fn as NextStandardFunction)();
                 }
             });
 
@@ -266,6 +271,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
                     }
 
                     if (typeof reason === 'string') {
+                        // @ts-ignore
                         resWriteHead.call(res, statusCode, reason, obj);
                     } else {
                         resWriteHead.call(res, statusCode, obj);
@@ -274,7 +280,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
                 const resEnd = res.end;
                 // @ts-ignore
-                res.end = (chunk: any, encoding: BufferEncoding, callback: Function) => {
+                res.end = (chunk: any, encoding: BufferEncoding, callback: NextFunction) => {
 
                     if (res.statusCode === 200 && wsContext != null) {
 
@@ -283,6 +289,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
                     }
 
+                    // @ts-ignore
                     resEnd.call(res, chunk, encoding, callback);
                 }
             }
