@@ -1,4 +1,4 @@
-## connect-grip
+## serve-grip
 
 GRIP library for Node.js, provided as `connect`-compatible middleware.
 
@@ -20,12 +20,12 @@ Authors: Katsuyuki Ohmuro <kats@fanout.io>, Konstantin Bokarius <kon@fanout.io>
 [GRIP](https://pushpin.org/docs/protocols/grip/) is a protocol that enables a web service to
 delegate realtime push behavior to a proxy component, using HTTP and headers.
 
-`connect-grip` parses the `Grip-Sig` header in any requests to detect if they came through a Grip
+`@fanoutio/serve-grip` parses the `Grip-Sig` header in any requests to detect if they came through a Grip
 proxy, and provides your route handler with tools to handle such requests.  This includes
 access to information about whether the current request is proxied or is signed, as well as
 methods to issue any hold instructions to the GRIP proxy.
 
-Additionally, `connect-grip` also handles
+Additionally, `serve-grip` also handles
 [WebSocket-Over-HTTP processing](https://pushpin.org/docs/protocols/websocket-over-http/) so
 that WebSocket connections managed by the GRIP proxy can be controlled by your route handlers.
 
@@ -34,22 +34,22 @@ that WebSocket connections managed by the GRIP proxy can be controlled by your r
 Install the library.
 
 ```sh
-npm install @fanoutio/connect-grip
+npm install @fanoutio/serve-grip
 ```
 
 #### Installation in Connect / Express
 
-Import the `ConnectGrip` class and instantiate the middleware. Then install it before your routes.
+Import the `ServeGrip` class and instantiate the middleware. Then install it before your routes.
 
 Example:
 ```javascript
 import { express } from "express";
-import { ConnectGrip } from '@fanoutio/connect-grip';
+import { ServeGrip } from '@fanoutio/serve-grip';
 
 const app = express();
 
-const connectGrip = new ConnectGrip(/* config */);
-app.use( connectGrip ); 
+const serveGrip = new ServeGrip(/* config */);
+app.use( serveGrip ); 
 
 app.use( '/path', (res, req) => {
 
@@ -70,23 +70,23 @@ app.listen(3000);
 You may use this library to add GRIP functionality to your
 [Next.js API Routes](https://nextjs.org/docs/api-routes/introduction).
 
-Import the `ConnectGrip` class and instantiate the middleware, and then run it in your handler
-before your application logic by calling the async function `connectGrip.run()`.
+Import the `ServeGrip` class and instantiate the middleware, and then run it in your handler
+before your application logic by calling the async function `serveGrip.run()`.
 
 Example:
 `/lib/grip.js`:
 ```javascript
-import { ConnectGrip } from '@fanoutio/connect-grip';
-export const connectGrip = new ConnectGrip(/* config */);
+import { ServeGrip } from '@fanoutio/serve-grip';
+export const serveGrip = new ServeGrip(/* config */);
 ```
 
 `/pages/api/path.js`:
 ```javascript
-import { connectGrip } from '/lib/grip';
+import { serveGrip } from '/lib/grip';
 
 export default async(req, res) => {
     // Run the middleware
-    await connectGrip.run(req, res);
+    await serveGrip.run(req, res);
 
     if (req.grip.isProxied) {
         const gripInstruct = res.grip.startInstruct();
@@ -105,13 +105,13 @@ middleware in a shared location and reference it from your API routes.
 
 ### Configuration
 
-`connect-grip` exports a constructor function, `ConnectGrip`.  This constructor takes a
+`@fanoutio/serve-grip` exports a constructor function, `ServeGrip`.  This constructor takes a
 configuration object that can be used to configure the instance, such as the GRIP proxies to use
 for publishing or whether incoming requests should require a GRIP proxy.
 
 ```javascript
-import { ConnectGrip } from '@fanoutio/connect-grip';
-const connectGrip = new ConnectGrip({
+import { ServeGrip } from '@fanoutio/serve-grip';
+const serveGrip = new ServeGrip({
     grip: {
         control_uri: 'https://api.fanout.io/realm/<realm-name>/publish/', // Publishing endpoint
         control_iss: '<realm-name>', // (optional) Needed for servers that require authorization
@@ -162,17 +162,17 @@ extended with `grip` properties.  These provide access to the following:
 | --- | --- |
 | `res.grip.startInstruct()` | Returns an instance of `GripInstruct`, which can be used to issue instructions to the GRIP proxy to hold connections. See `@fanoutio/grip` for details on `GripInstruct`. |
 
-To publish messages, call `connectGrip.getPublisher()` to obtain a
+To publish messages, call `serveGrip.getPublisher()` to obtain a
 `Publisher`. Use it to publish messages using the endpoints and 
-prefix specified to the `ConnectGrip` constructor.
+prefix specified to the `ServeGrip` constructor.
 
 | Key | Description |
 | --- | --- |
-| `connectGrip.getPublisher()` | Returns an instance of `Publisher`, which can be used to publish messages to the provided publishing endpoints using the provided prefix. See `@fanoutio/grip` for details on `Publisher`. |
+| `serveGrip.getPublisher()` | Returns an instance of `Publisher`, which can be used to publish messages to the provided publishing endpoints using the provided prefix. See `@fanoutio/grip` for details on `Publisher`. |
 
 ### Examples
 
-This repository contains examples to illustrate the use of `connect-grip` in Connect / Express
+This repository contains examples to illustrate the use of `serve-grip` in Connect / Express
 and Next.js, which can be found in the `examples` directory.  For details on each example, please
 read the `README.md` files in the corresponding directories.  
 
@@ -180,7 +180,7 @@ read the `README.md` files in the corresponding directories.
 
 #### Next.js alternative invocation
 
-As an alternative method of running `connectGrip` in a Next.js API route, since `connectGrip` is
+As an alternative method of running `serveGrip` in a Next.js API route, since `serveGrip` is
 `connect`-compatible, you may use the process described in
 [API Middlewares](https://nextjs.org/docs/api-routes/api-middlewares#connectexpress-middleware-support).
 This may be useful for example if you have multiple middlewares and you wish to call them in a
@@ -189,8 +189,8 @@ uniform manner.
 Example:
 `/lib/grip.js`:
 ```javascript
-import { ConnectGrip } from '@fanoutio/connect-grip';
-export const connectGrip = new ConnectGrip(/* config */);
+import { ServeGrip } from '@fanoutio/serve-grip';
+export const serveGrip = new ServeGrip(/* config */);
 
 // Helper method to wait for a middleware to execute before continuing
 // And to throw an error when an error happens in a middleware
@@ -210,12 +210,12 @@ export function runMiddleware(req, res, fn) {
 
 `/pages/api/path.js`:
 ```javascript
-import { connectGrip, runMiddleware } from '/lib/grip';
+import { serveGrip, runMiddleware } from '/lib/grip';
 
 export default async(req, res) => {
 
     // Run the middleware
-    await runMiddleware(req, res, connectGrip);
+    await runMiddleware(req, res, serveGrip);
 
     if (req.grip.isProxied) {
         const gripInstruct = res.grip.startInstruct();

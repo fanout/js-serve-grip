@@ -3,7 +3,7 @@ import {
     Publisher,
 } from "@fanoutio/grip";
 
-export default interface IConnectGripConfig {
+export default interface IServeGripConfig {
     grip?: string | IGripConfig | IGripConfig[] | Publisher;
     gripProxyRequired?: boolean;
     prefix?: string;

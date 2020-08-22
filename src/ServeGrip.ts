@@ -17,10 +17,10 @@ import {
     Channel,
 } from "@fanoutio/grip";
 
-import IConnectGripConfig from "./IConnectGripConfig";
+import IServeGripConfig from "./IServeGripConfig";
 
-import { ConnectGripApiResponse } from "./ConnectGripApiResponse";
-import { ConnectGripApiRequest } from "./ConnectGripApiRequest";
+import { ServeGripApiResponse } from "./ServeGripApiResponse";
+import { ServeGripApiRequest } from "./ServeGripApiRequest";
 
 import GripInstructNotAvailableException from "./GripInstructNotAvailableException";
 import GripInstructAlreadyStartedException from "./GripInstructAlreadyStartedException";
@@ -41,23 +41,23 @@ function flattenHeader(value: undefined | string | string[]) {
 }
 
 // @ts-ignore
-export default class ConnectGrip extends CallableInstance<[IncomingMessage, ServerResponse, NextFunction], void> {
+export default class ServeGrip extends CallableInstance<[IncomingMessage, ServerResponse, NextFunction], void> {
     gripProxies?: string | IGripConfig | IGripConfig[] | Publisher;
     prefix: string = '';
     isGripProxyRequired: boolean = false;
     _publisher?: Publisher;
 
-    constructor(config?: IConnectGripConfig) {
+    constructor(config?: IServeGripConfig) {
         super('exec');
         this.applyConfig(config);
     }
 
-    applyConfig(config: IConnectGripConfig = {}) {
+    applyConfig(config: IServeGripConfig = {}) {
 
         const { grip, gripProxyRequired = false, prefix = '' } = config;
 
         if (this._publisher != null) {
-            throw new Error("applyConfig called on ConnectGrip that already has an instantiated publisher.");
+            throw new Error("applyConfig called on ServeGrip that already has an instantiated publisher.");
         }
 
         this.gripProxies = grip;
@@ -85,7 +85,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
     exec(req: IncomingMessage, res: ServerResponse, fn: NextFunction) {
 
         let err: Error | undefined;
-        this.run(req as ConnectGripApiRequest, res as ConnectGripApiResponse)
+        this.run(req as ServeGripApiRequest, res as ServeGripApiResponse)
             .catch(ex => err = ex)
             .then(() => {
                 if (err !== undefined) {
@@ -97,7 +97,7 @@ export default class ConnectGrip extends CallableInstance<[IncomingMessage, Serv
 
     }
 
-    async run(req: ConnectGripApiRequest, res: ConnectGripApiResponse) {
+    async run(req: ServeGripApiRequest, res: ServeGripApiResponse) {
 
         if (req.grip != null) {
             // This would indicate that we are already running for this request.
