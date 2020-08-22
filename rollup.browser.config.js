@@ -9,9 +9,9 @@ import typescript from '@rollup/plugin-typescript';
 export default {
     input: 'src/main.browser.ts',
     output: {
-        file: 'browser/connect-grip.js',
+        file: 'browser/serve-grip.js',
         format: 'iife',
-        name: 'ConnectGrip',
+        name: 'ServeGrip',
     },
     plugins: [
         replace({

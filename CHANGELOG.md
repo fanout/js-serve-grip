@@ -1,4 +1,4 @@
-# @fanoutio/connect-grip Changelog
+# @fanoutio/serve-grip Changelog
 
 All notable changes to this project will be documented in this file.
 

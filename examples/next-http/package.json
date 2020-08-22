@@ -9,7 +9,7 @@
   "author": "Katsuyuki Ohmuro <kats@fanout.io>",
   "license": "MIT",
   "dependencies": {
-    "@fanoutio/connect-grip": "file:../..",
+    "@fanoutio/serve-grip": "file:../../",
     "next": "^9.5.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1"

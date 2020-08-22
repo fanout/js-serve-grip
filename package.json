@@ -1,5 +1,5 @@
 {
-  "name": "@fanoutio/connect-grip",
+  "name": "@fanoutio/serve-grip",
   "version": "0.1.0-beta.11",
   "author": "Fanout, Inc. <info@fanout.io>",
   "description": "Connect-style Middleware for GRIP",
@@ -36,7 +36,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/fanout/connect-grip.git"
+    "url": "https://github.com/fanout/serve-grip.git"
   },
   "readmeFilename": "README.md",
   "keywords": [
