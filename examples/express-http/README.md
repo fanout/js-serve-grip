@@ -1,8 +1,8 @@
 # express-http
 
-Example for using connect-grip with HTTP formats in Express.
+Example for using serve-grip with HTTP formats in Express.
 
-1. To run the example, first build `connect-grip` by typing the following _in the root directory_
+1. To run the example, first build `serve-grip` by typing the following _in the root directory_
 of this repository.
 ```
 npm install
@@ -20,7 +20,7 @@ Pushpin `routes` file looks like this:
 npm install
 ```
 
-This will install the dependencies for this project, including `connect-grip` and Express.
+This will install the dependencies for this project, including `serve-grip` and Express.
 
 4. Start the example application.
 ```

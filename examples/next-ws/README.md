@@ -1,8 +1,8 @@
 # next-ws
 
-Example for using connect-grip with WebSockets-over-HTTP in Next.js.
+Example for using serve-grip with WebSockets-over-HTTP in Next.js.
 
-1. To run the example, first build `connect-grip` by typing the following _in the root directory_
+1. To run the example, first build `serve-grip` by typing the following _in the root directory_
 of this repository.
 ```
 npm install
@@ -25,7 +25,7 @@ npm install -g wscat
 npm install
 ```
 
-This will install the dependencies for this project, including `connect-grip`, Next.js, and React.
+This will install the dependencies for this project, including `serve-grip`, Next.js, and React.
 
 5. Start the example application.
 ```

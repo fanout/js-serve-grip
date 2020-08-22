@@ -2,7 +2,7 @@
   "name": "express-ws",
   "version": "1.0.0",
   "private": true,
-  "description": "Example for using connect-grip with WebSockets-over-HTTP in Express",
+  "description": "Example for using serve-grip with WebSockets-over-HTTP in Express",
   "scripts": {
     "dev": "node server.js"
   },

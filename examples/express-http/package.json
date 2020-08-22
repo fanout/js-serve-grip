@@ -2,7 +2,7 @@
   "name": "express-http",
   "version": "1.0.0",
   "private": true,
-  "description": "Example for using connect-grip with HTTP formats in Express",
+  "description": "Example for using serve-grip with HTTP formats in Express",
   "scripts": {
     "dev": "node server.js"
   },

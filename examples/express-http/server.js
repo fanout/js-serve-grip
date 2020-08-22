@@ -1,5 +1,5 @@
 const express = require( 'express' );
-const { ConnectGrip } = require( '@fanoutio/connect-grip' );
+const { ServeGrip } = require( '@fanoutio/serve-grip' );
 
 const PORT = 3000;
 const CHANNEL_NAME = 'test';
@@ -7,13 +7,13 @@ const PUSHPIN_URL = "http://localhost:5561/";
 
 const app = express();
 
-const connectGrip = new ConnectGrip({
+const serveGrip = new ServeGrip({
     grip: {
         control_uri: PUSHPIN_URL,
     },
 });
 
-app.use(connectGrip);
+app.use(serveGrip);
 
 app.get('/api/stream', async function(req, res) {
 
@@ -39,7 +39,7 @@ app.post('/api/publish', express.text({ type: '*/*' }), async function(req, res,
 
     const data = req.body;
 
-    const publisher = connectGrip.getPublisher();
+    const publisher = serveGrip.getPublisher();
     await publisher.publishHttpStream(CHANNEL_NAME, data + '\n');
 
     res.setHeader('Content-Type', 'text/plain');

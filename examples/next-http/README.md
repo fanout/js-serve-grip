@@ -1,8 +1,8 @@
 # next-http
 
-Example for using connect-grip with HTTP formats in Next.js.
+Example for using serve-grip with HTTP formats in Next.js.
 
-1. To run the example, first build `connect-grip` by typing the following _in the root directory_
+1. To run the example, first build `serve-grip` by typing the following _in the root directory_
 of this repository.
 ```
 npm install
@@ -20,7 +20,7 @@ Pushpin `routes` file looks like this:
 npm install
 ```
 
-This will install the dependencies for this project, including `connect-grip`, Next.js, and React.
+This will install the dependencies for this project, including `serve-grip`, Next.js, and React.
 
 4. Start the example application.
 ```

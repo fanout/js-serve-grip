@@ -2,7 +2,7 @@
   "name": "next-ws",
   "version": "1.0.0",
   "private": true,
-  "description": "Example for using connect-grip with WebSockets-over-HTTP in Next.js",
+  "description": "Example for using serve-grip with WebSockets-over-HTTP in Next.js",
   "scripts": {
     "dev": "next"
   },
