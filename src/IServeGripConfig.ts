@@ -1,7 +1,4 @@
-import {
-    IGripConfig,
-    Publisher,
-} from "@fanoutio/grip";
+import { IGripConfig, Publisher } from '@fanoutio/grip';
 
 export default interface IServeGripConfig {
     grip?: string | IGripConfig | IGripConfig[] | Publisher;

@@ -1,4 +1,4 @@
-import { WebSocketContext } from "@fanoutio/grip";
+import { WebSocketContext } from '@fanoutio/grip';
 
 export default interface IRequestGrip {
     isProxied: boolean;
