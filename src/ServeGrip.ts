@@ -113,7 +113,7 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                         needsSigned = true;
                         // If all proxies have keys, then only consider the request
                         // signed if at least one of them has signed it
-                        if (clients.some((client) => validateSig(gripSigHeader, (client.auth as Auth.Jwt).key))) {
+                        if (clients.some((client) => validateSig(gripSigHeader, (client.auth as Auth.Jwt).key as Buffer))) {
                             isProxied = true;
                             isSigned = true;
                         }
