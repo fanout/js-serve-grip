@@ -1,6 +1,6 @@
 {
   "name": "@fanoutio/serve-grip",
-  "version": "0.1.0-beta.15",
+  "version": "1.0.0",
   "author": "Fanout, Inc. <info@fanout.io>",
   "description": "Connect-style Middleware for GRIP",
   "contributors": [
@@ -74,7 +74,7 @@
     "webpack-cli": "^3.3.12"
   },
   "dependencies": {
-    "@fanoutio/grip": "^3.0.0-beta.7",
+    "@fanoutio/grip": "^3.0.0",
     "callable-instance": "^2.0.0"
   }
 }
