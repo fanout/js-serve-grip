@@ -16,12 +16,15 @@ const config = {
     output: {
         path: PATHS.bundles,
         filename: fileName + (PROD ? '.min' : '') + '.js',
-        libraryTarget: 'umd',
+        libraryTarget: 'var',
         library: libName,
         umdNamedDefine: true
     },
     resolve: {
         extensions: ['.ts', '.js']
+    },
+    externals: {
+        '@fanoutio/grip': 'Grip',
     },
     devtool: PROD ? 'source-map' : 'inline-source-map',
     module: {
