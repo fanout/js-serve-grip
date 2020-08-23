@@ -25,9 +25,7 @@ import PrefixedPublisher from './PrefixedPublisher';
 
 const CONTENT_TYPE_WEBSOCKET_EVENTS = 'application/websocket-events';
 
-type NextStandardFunction = () => void;
-type NextErrorFunction = (e: Error) => void;
-type NextFunction = NextStandardFunction | NextErrorFunction;
+type NextFunction = (e?: Error) => void;
 
 function flattenHeader(value: undefined | string | string[]) {
     if (Array.isArray(value)) {
@@ -36,7 +34,6 @@ function flattenHeader(value: undefined | string | string[]) {
     return value;
 }
 
-// @ts-ignore
 export default class ServeGrip extends CallableInstance<[IncomingMessage, ServerResponse, NextFunction], void> {
     gripProxies?: string | IGripConfig | IGripConfig[] | Publisher;
     prefix: string = '';
@@ -82,9 +79,9 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
             .catch((ex) => (err = ex))
             .then(() => {
                 if (err !== undefined) {
-                    (fn as NextErrorFunction)(err);
+                    fn(err);
                 } else {
-                    (fn as NextStandardFunction)();
+                    fn();
                 }
             });
     }
@@ -113,7 +110,11 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                         needsSigned = true;
                         // If all proxies have keys, then only consider the request
                         // signed if at least one of them has signed it
-                        if (clients.some((client) => validateSig(gripSigHeader, (client.auth as Auth.Jwt).key as Buffer))) {
+                        if (
+                            clients.some((client) =>
+                                validateSig(gripSigHeader, (client.auth as Auth.Jwt).key as Buffer),
+                            )
+                        ) {
                             isProxied = true;
                             isSigned = true;
                         }
