@@ -2,10 +2,10 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "es5",
-    "lib": ["es5", "es2015", "dom"],
+    "lib": ["es2015", "dom"],
     "sourceMap": true,
+    "declaration": false,
     "allowJs": false,
-    "declaration": true,
     "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "noImplicitReturns": true,
@@ -19,10 +19,11 @@
     "strict": true
   },
   "include": [
-    "src/**/*",
-    "types/**/*"
+    "src",
+    "types"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "**/main.browser.ts"
   ]
 }
