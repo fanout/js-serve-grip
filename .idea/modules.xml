@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/serve-grip.iml" filepath="$PROJECT_DIR$/serve-grip.iml" />
+      <module fileurl="file://$PROJECT_DIR$/js-serve-grip.iml" filepath="$PROJECT_DIR$/js-serve-grip.iml" />
     </modules>
   </component>
 </project>

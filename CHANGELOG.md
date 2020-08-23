@@ -1,4 +1,4 @@
-# @fanoutio/serve-grip Changelog
+# js-serve-grip Changelog
 
 All notable changes to this project will be documented in this file.
 

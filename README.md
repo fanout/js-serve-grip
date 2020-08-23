@@ -1,4 +1,4 @@
-## serve-grip
+## js-serve-grip
 
 GRIP library for Node.js, provided as `connect`-compatible middleware.
 
