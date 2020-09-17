@@ -60,13 +60,14 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
     getPublisher(): Publisher {
         if (this._publisher == null) {
             let publisher: Publisher;
+            if (this.gripProxies == null) {
+                throw new Error('No Grip configuration provided. Provide one to the constructor of ServeGrip, or call applyConfig() with a Grip configuration, before calling getPublisher().');
+            }
             if (this.gripProxies instanceof Publisher) {
                 publisher = this.gripProxies;
             } else {
                 publisher = new Publisher();
-                if (this.gripProxies != null) {
-                    publisher.applyConfig(this.gripProxies);
-                }
+                publisher.applyConfig(this.gripProxies);
             }
             this._publisher = new PrefixedPublisher(publisher, this.prefix);
         }
@@ -94,6 +95,13 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
         }
 
         try {
+            // Config check
+            if (this.gripProxies == null) {
+                res.statusCode = 500;
+                res.end('No Grip configuration provided.\n');
+                return;
+            }
+
             // ## Set up req.grip
 
             const gripSigHeader = flattenHeader(req.headers['grip-sig']);
