@@ -86,7 +86,11 @@ import { serveGrip } from '/lib/grip';
 
 export default async(req, res) => {
     // Run the middleware
-    await serveGrip.run(req, res);
+    if (!(await serveGrip.run(req, res))) {
+        // If serveGrip.run() has returned false, it means the middleware has already
+        // sent and ended the response, usually due to an error.  
+        return;
+    }
 
     if (req.grip.isProxied) {
         const gripInstruct = res.grip.startInstruct();

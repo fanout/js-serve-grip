@@ -2,7 +2,9 @@ import { CHANNEL_NAME, serveGrip } from "../../lib/grip";
 
 export default async (req, res) => {
 
-    await serveGrip.run(req, res);
+    if (!(await serveGrip.run(req, res))) {
+        return;
+    }
 
     const { method } = req;
     if (method === 'POST') {
