@@ -43,8 +43,8 @@ Import the `ServeGrip` class and instantiate the middleware. Then install it bef
 
 Example:
 ```javascript
-import { express } from "express";
-import { ServeGrip } from '@fanoutio/serve-grip';
+const express = require( 'express' );
+const { ServeGrip } = require( '@fanoutio/serve-grip' );
 
 const app = express();
 
