@@ -78,20 +78,22 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
         let err: Error | undefined;
         this.run(req as ServeGripApiRequest, res as ServeGripApiResponse)
             .catch((ex) => (err = ex))
-            .then(() => {
+            .then((result) => {
                 if (err !== undefined) {
                     fn(err);
                 } else {
-                    fn();
+                    if (result) {
+                        fn();
+                    }
                 }
             });
     }
 
-    async run(req: ServeGripApiRequest, res: ServeGripApiResponse) {
+    async run(req: ServeGripApiRequest, res: ServeGripApiResponse): Promise<boolean> {
         if (req.grip != null) {
             // This would indicate that we are already running for this request.
             // We don't install ourselves multiple times.
-            return;
+            return true;
         }
 
         try {
@@ -99,7 +101,7 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
             if (this.gripProxies == null) {
                 res.statusCode = 500;
                 res.end('No Grip configuration provided.\n');
-                return;
+                return false;
             }
 
             // ## Set up req.grip
@@ -137,7 +139,7 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                 // not one, we needs to fail now
                 res.statusCode = 501;
                 res.end('Not Implemented.\n');
-                return;
+                return false;
             }
 
             let contentTypeHeader = flattenHeader(req.headers['content-type']);
@@ -162,7 +164,7 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                 if (cid == null) {
                     res.statusCode = 400;
                     res.end('WebSocket event missing connection-id header.\n');
-                    return;
+                    return false;
                 }
 
                 // Handle meta keys
@@ -193,7 +195,7 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                 } catch (err) {
                     res.statusCode = 400;
                     res.end('Error parsing WebSocket events.\n');
-                    return;
+                    return false;
                 }
                 wsContext = new WebSocketContext(cid, meta, events, this.prefix);
             }
@@ -287,5 +289,7 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
         } catch (ex) {
             throw ex instanceof Error ? ex : new Error(ex);
         }
+
+        return true;
     }
 }
