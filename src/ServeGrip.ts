@@ -60,6 +60,7 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
     }
 
     getPublisher(): Publisher {
+        debug('ServeGrip#getPublisher - start');
         if (this._publisher == null) {
             let publisher: Publisher;
             if (this.gripProxies == null) {
@@ -75,6 +76,8 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                 publisher.applyConfig(this.gripProxies);
             }
             this._publisher = new PrefixedPublisher(publisher, this.prefix);
+        } else {
+            debug('returning publisher');
         }
         debug('ServeGrip#getPublisher - end');
         return this._publisher;
@@ -113,6 +116,8 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                 res.end('No Grip configuration provided.\n');
                 return false;
             }
+
+            debug("gripProxies", this.gripProxies);
 
             // ## Set up req.grip
             debug('Set up req.grip - start');
