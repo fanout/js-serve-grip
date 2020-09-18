@@ -304,91 +304,89 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
             // ## Monkey-patch res methods
             debug('Monkey-patch res methods - start');
 
-            if (isProxied) {
-                debug('res.writeHead');
-                const resWriteHead = res.writeHead;
-                // @ts-ignore
-                res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
-                    debug('res.writeHead - start');
-                    if (typeof reason === 'string') {
-                        // assume this was called like this:
-                        // writeHead(statusCode, reasonPhrase[, headers])
-                    } else {
-                        // this was called like this:
-                        // writeHead(statusCode[, headers])
-                        obj = reason;
-                    }
+            debug('res.writeHead');
+            const resWriteHead = res.writeHead;
+            // @ts-ignore
+            res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
+                debug('res.writeHead - start');
+                if (typeof reason === 'string') {
+                    // assume this was called like this:
+                    // writeHead(statusCode, reasonPhrase[, headers])
+                } else {
+                    // this was called like this:
+                    // writeHead(statusCode[, headers])
+                    obj = reason;
+                }
 
-                    debug('res.statusCode', res.statusCode);
-                    if (wsContext != null) {
-                        debug('wsContext exists');
-                    } else {
-                        debug('wsContext does not exist');
-                    }
+                debug('res.statusCode', res.statusCode);
+                if (wsContext != null) {
+                    debug('wsContext exists');
+                } else {
+                    debug('wsContext does not exist');
+                }
 
-                    if (statusCode === 200 && wsContext != null) {
-                        const wsContextHeaders = wsContext.toHeaders();
-                        debug("Adding wsContext headers", wsContextHeaders);
-                        obj = Object.assign({}, obj, wsContextHeaders);
-                    } else {
-                        if (gripInstruct != null) {
-                            debug("GripInstruct present");
-                            if (statusCode === 304) {
-                                // Code 304 only allows certain headers.
-                                // Some web servers strictly enforce this.
-                                // In that case we won't be able to use
-                                // Grip- headers to talk to the proxy.
-                                // Switch to code 200 and use Grip-Status
-                                // to specify intended status.
-                                debug("Using gripInstruct setStatus header to handle 304");
-                                statusCode = 200;
-                                reason = 'OK';
-                                gripInstruct.setStatus(304);
-                            }
-                            // Apply prefix to channel names
-                            gripInstruct.channels = gripInstruct.channels.map(
-                                (ch) => new Channel(this.prefix + ch.name, ch.prevId),
-                            );
-                            const gripInstructHeaders = gripInstruct.toHeaders();
-                            debug("Adding GripInstruct headers", gripInstructHeaders);
-                            obj = Object.assign({}, obj, gripInstructHeaders);
-                        } else {
-                            debug("GripInstruct not present");
+                if (statusCode === 200 && wsContext != null) {
+                    const wsContextHeaders = wsContext.toHeaders();
+                    debug("Adding wsContext headers", wsContextHeaders);
+                    obj = Object.assign({}, obj, wsContextHeaders);
+                } else {
+                    if (gripInstruct != null) {
+                        debug("GripInstruct present");
+                        if (statusCode === 304) {
+                            // Code 304 only allows certain headers.
+                            // Some web servers strictly enforce this.
+                            // In that case we won't be able to use
+                            // Grip- headers to talk to the proxy.
+                            // Switch to code 200 and use Grip-Status
+                            // to specify intended status.
+                            debug("Using gripInstruct setStatus header to handle 304");
+                            statusCode = 200;
+                            reason = 'OK';
+                            gripInstruct.setStatus(304);
                         }
-                    }
-                    debug('res.writeHead - end');
-
-                    if (typeof reason === 'string') {
-                        // @ts-ignore
-                        resWriteHead.call(res, statusCode, reason, obj);
+                        // Apply prefix to channel names
+                        gripInstruct.channels = gripInstruct.channels.map(
+                            (ch) => new Channel(this.prefix + ch.name, ch.prevId),
+                        );
+                        const gripInstructHeaders = gripInstruct.toHeaders();
+                        debug("Adding GripInstruct headers", gripInstructHeaders);
+                        obj = Object.assign({}, obj, gripInstructHeaders);
                     } else {
-                        resWriteHead.call(res, statusCode, obj);
+                        debug("GripInstruct not present");
                     }
-                };
+                }
+                debug('res.writeHead - end');
 
-                debug('res.end');
-                const resEnd = res.end;
-                // @ts-ignore
-                res.end = (chunk: any, encoding: BufferEncoding, callback: NextFunction) => {
-                    debug('res.end - start');
-                    debug('res.statusCode', res.statusCode);
-                    if (wsContext != null) {
-                        debug('wsContext exists' );
-                    } else {
-                        debug('wsContext does not exist' );
-                    }
-                    if (res.statusCode === 200 && wsContext != null) {
-                        debug('Getting outgoing events' );
-                        const events = wsContext.getOutgoingEvents();
-                        debug('Encoding and writing events', events );
-                        res.write(encodeWebSocketEvents(events));
-                    }
-                    debug('res.end - end');
-
+                if (typeof reason === 'string') {
                     // @ts-ignore
-                    resEnd.call(res, chunk, encoding, callback);
-                };
-            }
+                    resWriteHead.call(res, statusCode, reason, obj);
+                } else {
+                    resWriteHead.call(res, statusCode, obj);
+                }
+            };
+
+            debug('res.end');
+            const resEnd = res.end;
+            // @ts-ignore
+            res.end = (chunk: any, encoding: BufferEncoding, callback: NextFunction) => {
+                debug('res.end - start');
+                debug('res.statusCode', res.statusCode);
+                if (wsContext != null) {
+                    debug('wsContext exists' );
+                } else {
+                    debug('wsContext does not exist' );
+                }
+                if (res.statusCode === 200 && wsContext != null) {
+                    debug('Getting outgoing events' );
+                    const events = wsContext.getOutgoingEvents();
+                    debug('Encoding and writing events', events );
+                    res.write(encodeWebSocketEvents(events));
+                }
+                debug('res.end - end');
+
+                // @ts-ignore
+                resEnd.call(res, chunk, encoding, callback);
+            };
             debug('Monkey-patch res methods - end');
         } catch (ex) {
             throw ex instanceof Error ? ex : new Error(ex);
