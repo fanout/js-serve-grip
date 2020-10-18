@@ -75,7 +75,7 @@
     "webpack-cli": "^3.3.12"
   },
   "dependencies": {
-    "@fanoutio/grip": "^3.0.2",
+    "@fanoutio/grip": "^3.0.3",
     "callable-instance": "^2.0.0",
     "debug": "^4.1.1"
   }

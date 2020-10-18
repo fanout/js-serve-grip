@@ -8,11 +8,14 @@ import {
     IGripConfig,
     Publisher,
     WebSocketContext,
-    decodeWebSocketEvents,
+    getWebSocketContextFromReq,
     encodeWebSocketEvents,
+    isWsOverHttp,
     validateSig,
     Auth,
     Channel,
+    ConnectionIdMissingException,
+    WebSocketDecodeEventException,
 } from '@fanoutio/grip';
 
 import IServeGripConfig from './IServeGripConfig';
@@ -24,8 +27,6 @@ import GripInstructNotAvailableException from './GripInstructNotAvailableExcepti
 import GripInstructAlreadyStartedException from './GripInstructAlreadyStartedException';
 
 import PrefixedPublisher from './PrefixedPublisher';
-
-const CONTENT_TYPE_WEBSOCKET_EVENTS = 'application/websocket-events';
 
 type NextFunction = (e?: Error) => void;
 
@@ -171,98 +172,30 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                 return false;
             }
 
-            let contentTypeHeader = flattenHeader(req.headers['content-type']);
-            if (contentTypeHeader != null) {
-                const at = contentTypeHeader.indexOf(';');
-                if (at >= 0) {
-                    contentTypeHeader = contentTypeHeader.substring(0, at);
-                }
-                debug("content-type header", contentTypeHeader);
-            } else {
-                debug("content-type header not present");
-            }
-
-            const acceptTypesHeader = flattenHeader(req.headers['accept']);
-            if (acceptTypesHeader != null) {
-                debug("accept header", acceptTypesHeader);
-            } else {
-                debug("accept header not present");
-            }
-            const acceptTypes = acceptTypesHeader?.split(',').map((item) => item.trim());
-            debug("accept types", acceptTypes);
-
             let wsContext: WebSocketContext | null = null;
 
-            if (
-                req.method === 'POST' &&
-                (contentTypeHeader === CONTENT_TYPE_WEBSOCKET_EVENTS ||
-                    acceptTypes?.includes(CONTENT_TYPE_WEBSOCKET_EVENTS))
-            ) {
-                debug("request is WebSocket-over-HTTP");
-
-                const cid = flattenHeader(req.headers['connection-id']);
-                if (cid == null) {
-                    debug("ERROR - connection-id header needed. Send Error, returning false");
-                    res.statusCode = 400;
-                    res.end('WebSocket event missing connection-id header.\n');
-                    return false;
-                }
-                debug("Connection ID", cid);
-
-                // Handle meta keys
-                debug("Handling Meta - start");
-                const meta = {};
-                for (const [key, value] of Object.entries(req.headers)) {
-                    const lKey = key.toLowerCase();
-                    if (lKey.startsWith('meta-')) {
-                        const k = lKey.substring(5);
-                        meta[k] = value;
-                        debug(k, "=", value);
-                    }
-                }
-                debug("Handling Meta - end");
-
-                if (req.body == null) {
-                    debug("Reading body - start");
-                    req.body = await new Promise((resolve) => {
-                        const bodySegments: any[] = [];
-                        req.on('data', (chunk) => {
-                            bodySegments.push(chunk);
-                        });
-                        req.on('end', () => {
-                            const bodyBuffer = Buffer.concat(bodySegments);
-                            resolve(bodyBuffer);
-                        });
-                    });
-                    if (req.body != null) {
-                        if (req.body instanceof Buffer) {
-                            debug("body (Buffer)", req.body.toString('base64'));
-                        } else {
-                            debug("body (string)", req.body);
-                        }
-                    } else {
-                        debug("body is null");
-                    }
-                    debug("Reading body - end");
-                }
-
-                debug("Decode body - start");
-                let events = null;
+            if (isWsOverHttp(req)) {
                 try {
-                    events = decodeWebSocketEvents(req.body!);
-                } catch (err) {
-                    debug("ERROR - error parsing websocket events. Send error, returning false");
+                    wsContext = await getWebSocketContextFromReq(req, this.prefix);
+                } catch(ex) {
+                    if (ex instanceof ConnectionIdMissingException) {
+                        debug("ERROR - connection-id header needed. Send Error, returning false");
+                        res.statusCode = 400;
+                        res.end('WebSocket event missing connection-id header.\n');
+                        return false;
+                    }
+                    if (ex instanceof WebSocketDecodeEventException) {
+                        debug("ERROR - error parsing websocket events. Send Error, returning false");
+                        res.statusCode = 400;
+                        res.end('Error parsing WebSocket events.\n');
+                        return false;
+                    }
+                    debug("ERROR - unknown exception getting web socket context from request");
+                    debug(ex);
                     res.statusCode = 400;
-                    res.end('Error parsing WebSocket events.\n');
+                    res.end('Error getting web socket Context.\n');
                     return false;
                 }
-                debug("Decode body - end");
-
-                debug("Websocket Events", events);
-
-                debug("Creating Websocket Context - start");
-                wsContext = new WebSocketContext(cid, meta, events, this.prefix);
-                debug("Creating Websocket Context - end");
             }
 
             Object.assign(req, {
