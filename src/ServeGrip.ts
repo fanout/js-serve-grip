@@ -8,7 +8,7 @@ import {
     IGripConfig,
     Publisher,
     WebSocketContext,
-    getWebSocketContextFromReq,
+    getWebSocketContext,
     encodeWebSocketEvents,
     isWsOverHttp,
     validateSig,
@@ -175,8 +175,47 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
             let wsContext: WebSocketContext | null = null;
 
             if (isWsOverHttp(req)) {
+
+                // Read body.
+                // Depending on the stack / other middleware that might already
+                // be installed, this might already have been done for us.
+                let body: string | Buffer | undefined;
+                if (req.body != null) {
+                    debug("Body already exists on req.");
+                    body = req.body;
+                } else {
+                    debug("Reading body - start");
+                    body = await new Promise((resolve) => {
+                        const bodySegments: any[] = [];
+                        req.on('data', (chunk) => {
+                            bodySegments.push(chunk);
+                        });
+                        req.on('end', () => {
+                            const bodyBuffer = Buffer.concat(bodySegments);
+                            resolve(bodyBuffer);
+                        });
+                    });
+                    if (body != null) {
+                        if (body instanceof Buffer) {
+                            debug("body (Buffer)", body.toString('base64'));
+                        } else {
+                            debug("body (string)", body);
+                        }
+                    } else {
+                        debug("body is null");
+                    }
+                    debug("Reading body - end");
+                }
+
+                if (body == null) {
+                    debug("ERROR - body was null.");
+                    res.statusCode = 400;
+                    res.end('Error parsing WebSocket events - body was null.\n');
+                    return false;
+                }
+
                 try {
-                    wsContext = await getWebSocketContextFromReq(req, this.prefix);
+                    wsContext = await getWebSocketContext(req, body, this.prefix);
                 } catch(ex) {
                     if (ex instanceof ConnectionIdMissingException) {
                         debug("ERROR - connection-id header needed. Send Error, returning false");
