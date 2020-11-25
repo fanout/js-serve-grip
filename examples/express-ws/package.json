@@ -9,6 +9,7 @@
   "author": "Katsuyuki Ohmuro <kats@fanout.io>",
   "license": "MIT",
   "dependencies": {
+    "@fanoutio/grip": "^3.0.3",
     "@fanoutio/serve-grip": "file:../../",
     "express": "^4.17.1"
   }
