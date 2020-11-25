@@ -12,7 +12,7 @@ npm run build
 2. Also, you will need to obtain and install Pushpin (https://pushpin.org/). Make sure that the
 Pushpin `routes` file looks like this:
 ```
-* localhost:3000
+* localhost:3000,over_http
 ```
 
 3. You will also need to obtain `wscat` to test WebSockets connections.
