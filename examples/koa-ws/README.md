@@ -1,6 +1,6 @@
 # koa-ws
 
-Example for using serve-grip with WebSockets-over-HTTP in Express.
+Example for using serve-grip with WebSockets-over-HTTP in Koa.
 
 1. To run the example, first build `serve-grip` by typing the following _in the root directory_
 of this repository.
