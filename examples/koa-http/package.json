@@ -1,0 +1,17 @@
+{
+  "name": "koa-http",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Example for using serve-grip with HTTP formats in Koa",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "author": "Katsuyuki Ohmuro <kats@fanout.io>",
+  "license": "MIT",
+  "dependencies": {
+    "@fanoutio/serve-grip": "file:../../",
+    "@koa/router": "^10.0.0",
+    "koa": "^2.13.1",
+    "koa-body": "^4.2.0"
+  }
+}
