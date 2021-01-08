@@ -7,6 +7,7 @@ Therefore, this library is usable with frameworks such as the following:
 * [connect](https://github.com/senchalabs/Connect)
 * [Express](https://expressjs.com/)
 * [Next.js](https://nextjs.org/)
+* [Koa](https://koajs.org/) * experimental support
 
 Supported GRIP servers include:
 
@@ -61,6 +62,41 @@ app.use( '/path', (res, req) => {
     }
 
 });
+
+app.listen(3000);
+```
+
+#### Installation in Koa (experimental)
+
+Import the `ServeGrip` class and instantiate it. The Koa middleware is available
+as the `.koa` property on the object. Install it before your routes.
+
+Example:
+```javascript
+const Koa = require( 'koa' );
+const Router = require( '@koa/router' );
+const { ServeGrip } = require( '@fanoutio/serve-grip' );
+
+const app = new Koa();
+
+const serveGrip = new ServeGrip(/* config */);
+app.use( serveGrip.koa );
+
+const router = new Router();
+
+router.use( '/path', ctx => {
+
+    if (ctx.req.grip.isProxied) {
+        const gripInstruct = res.grip.startInstruct();
+        gripInstruct.addChannel('test');
+        gripInstruct.setHoldStream();
+        ctx.body = '[stream open]\n';
+    }
+
+});
+
+app.use(router.routes())
+    .use(router.allowedMethods());
 
 app.listen(3000);
 ```
