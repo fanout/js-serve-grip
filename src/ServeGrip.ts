@@ -224,7 +224,9 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                     startInstruct() {
                         try {
                             debug('startInstruct - start');
-                            if (isProxied) {
+                            // In WebSocket-over-HTTP or if request is not proxied,
+                            // startInstruct is not available.
+                            if (wsContext == null && isProxied) {
                                 if (gripInstruct != null) {
                                     debug('ERROR - GripInstruct is already started');
                                     throw new GripInstructAlreadyStartedException();
@@ -246,68 +248,114 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
             debug('Set up res.grip - end');
 
             // ## Monkey-patch res methods
-            debug('Monkey-patch res methods - start');
+            if (wsContext != null) {
+                debug('Monkey-patch res methods for WS-over-HTTP - start');
 
-            debug('res.removeHeader');
-            const resRemoveHeader = res.removeHeader;
-            // @ts-ignore
-            res.removeHeader = (name) => {
-                debug('res.removeHeader - start');
-                // If we have a WsContext, then we don't want to allow removing
-                // the following headers.
-                let skip = false;
-                if (name != null && wsContext != null) {
-                    const nameLower = name.toLowerCase();
-                    if (nameLower === 'content-type' ||
-                        nameLower === 'content-length' ||
-                        nameLower === 'transfer-encoding'
-                    ) {
-                        // turn into a no-op
-                        skip = true;
+                debug('res.removeHeader');
+                const resRemoveHeader = res.removeHeader;
+                // @ts-ignore
+                res.removeHeader = (name) => {
+                    debug('res.removeHeader - start');
+                    // If we have a WsContext, then we don't want to allow removing
+                    // the following headers.
+                    let skip = false;
+                    if (name != null) {
+                        const nameLower = name.toLowerCase();
+                        if (nameLower === 'content-type' ||
+                            nameLower === 'content-length' ||
+                            nameLower === 'transfer-encoding'
+                        ) {
+                            // turn into a no-op
+                            skip = true;
+                        }
                     }
-                }
-                if (!skip) {
-                    debug('not skipping removeHeader', name);
-                    resRemoveHeader.call(res, name);
-                } else {
-                    debug('skipping removeHeader', name);
-                }
-                debug('res.removeHeader - end');
-            };
+                    if (!skip) {
+                        debug('not skipping removeHeader', name);
+                        resRemoveHeader.call(res, name);
+                    } else {
+                        debug('skipping removeHeader', name);
+                    }
+                    debug('res.removeHeader - end');
+                };
 
-            debug('res.writeHead');
-            const resWriteHead = res.writeHead;
-            // @ts-ignore
-            res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
-                debug('res.writeHead - start');
-                if (typeof reason === 'string') {
-                    // assume this was called like this:
-                    // writeHead(statusCode, reasonPhrase[, headers])
-                } else {
-                    // this was called like this:
-                    // writeHead(statusCode[, headers])
-                    obj = reason;
-                }
+                debug('res.writeHead');
+                const resWriteHead = res.writeHead;
+                // @ts-ignore
+                res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
+                    debug('res.writeHead - start');
+                    if (typeof reason === 'string') {
+                        // assume this was called like this:
+                        // writeHead(statusCode, reasonPhrase[, headers])
+                    } else {
+                        // this was called like this:
+                        // writeHead(statusCode[, headers])
+                        obj = reason;
+                    }
 
-                debug('res.statusCode', res.statusCode);
-                if (wsContext != null) {
-                    debug('wsContext exists');
-                } else {
-                    debug('wsContext does not exist');
-                }
+                    debug('res.statusCode', res.statusCode);
 
-                if ((statusCode === 200 || statusCode === 204) && wsContext != null) {
-                    const wsContextHeaders = wsContext.toHeaders();
-                    debug("Adding wsContext headers", wsContextHeaders);
-                    obj = Object.assign({}, obj, wsContextHeaders);
-                    // Koa will set status code 204 when the body has been set to
-                    // null. This is probably fine since the main stream
-                    // for WS-over-HTTP is supposed to have an empty
-                    // body anyway.  However, we will be adding WebSocket
-                    // events into the body, so change it to a 200.
-                    statusCode = 200;
-                    reason = 'OK';
-                } else {
+                    if (statusCode === 200 || statusCode === 204) {
+                        const wsContextHeaders = wsContext!.toHeaders();
+                        debug("Adding wsContext headers", wsContextHeaders);
+                        obj = Object.assign({}, obj, wsContextHeaders);
+                        // Koa will set status code 204 when the body has been set to
+                        // null. This is probably fine since the main stream
+                        // for WS-over-HTTP is supposed to have an empty
+                        // body anyway.  However, we will be adding WebSocket
+                        // events into the body, so change it to a 200.
+                        statusCode = 200;
+                        reason = 'OK';
+                    }
+                    debug('res.writeHead - end');
+
+                    if (typeof reason === 'string') {
+                        // @ts-ignore
+                        resWriteHead.call(res, statusCode, reason, obj);
+                    } else {
+                        resWriteHead.call(res, statusCode, obj);
+                    }
+                };
+
+                debug('res.end');
+                const resEnd = res.end;
+                // @ts-ignore
+                res.end = (chunk: any, encoding: BufferEncoding, callback: NextFunction) => {
+                    debug('res.end - start');
+                    debug('res.statusCode', res.statusCode);
+                    if (res.statusCode === 200 || res.statusCode === 204) {
+                        debug('Getting outgoing events' );
+                        const events = wsContext!.getOutgoingEvents();
+                        debug('Encoding and writing events', events );
+                        res.write(encodeWebSocketEvents(events));
+                    }
+                    debug('res.end - end');
+
+                    // @ts-ignore
+                    resEnd.call(res, chunk, encoding, callback);
+                };
+
+                debug('Monkey-patch res methods for WS-over-HTTP - end');
+
+            } else {
+
+                debug('Monkey-patch res methods for GripInstruct - start');
+
+                debug('res.writeHead');
+                const resWriteHead = res.writeHead;
+                // @ts-ignore
+                res.writeHead = (statusCode: number, reason?: string, obj?: OutgoingHttpHeaders) => {
+                    debug('res.writeHead - start');
+                    if (typeof reason === 'string') {
+                        // assume this was called like this:
+                        // writeHead(statusCode, reasonPhrase[, headers])
+                    } else {
+                        // this was called like this:
+                        // writeHead(statusCode[, headers])
+                        obj = reason;
+                    }
+
+                    debug('res.statusCode', res.statusCode);
+
                     if (gripInstruct != null) {
                         debug("GripInstruct present");
                         if (statusCode === 304) {
@@ -332,40 +380,19 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                     } else {
                         debug("GripInstruct not present");
                     }
-                }
-                debug('res.writeHead - end');
+                    debug('res.writeHead - end');
 
-                if (typeof reason === 'string') {
-                    // @ts-ignore
-                    resWriteHead.call(res, statusCode, reason, obj);
-                } else {
-                    resWriteHead.call(res, statusCode, obj);
-                }
-            };
+                    if (typeof reason === 'string') {
+                        // @ts-ignore
+                        resWriteHead.call(res, statusCode, reason, obj);
+                    } else {
+                        resWriteHead.call(res, statusCode, obj);
+                    }
+                };
 
-            debug('res.end');
-            const resEnd = res.end;
-            // @ts-ignore
-            res.end = (chunk: any, encoding: BufferEncoding, callback: NextFunction) => {
-                debug('res.end - start');
-                debug('res.statusCode', res.statusCode);
-                if (wsContext != null) {
-                    debug('wsContext exists' );
-                } else {
-                    debug('wsContext does not exist' );
-                }
-                if ((res.statusCode === 200 || res.statusCode === 204) && wsContext != null) {
-                    debug('Getting outgoing events' );
-                    const events = wsContext.getOutgoingEvents();
-                    debug('Encoding and writing events', events );
-                    res.write(encodeWebSocketEvents(events));
-                }
-                debug('res.end - end');
+                debug('Monkey-patch res methods for GripInstruct - end');
+            }
 
-                // @ts-ignore
-                resEnd.call(res, chunk, encoding, callback);
-            };
-            debug('Monkey-patch res methods - end');
         } catch (ex) {
             throw ex instanceof Error ? ex : new Error(ex);
         }
