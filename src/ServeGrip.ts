@@ -242,6 +242,33 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
             // ## Monkey-patch res methods
             debug('Monkey-patch res methods - start');
 
+            debug('res.removeHeader');
+            const resRemoveHeader = res.removeHeader;
+            // @ts-ignore
+            res.removeHeader = (name) => {
+                debug('res.removeHeader - start');
+                // If we have a WsContext, then we don't want to allow removing
+                // the following headers.
+                let skip = false;
+                if (name != null && wsContext != null) {
+                    const nameLower = name.toLowerCase();
+                    if (nameLower === 'content-type' ||
+                        nameLower === 'content-length' ||
+                        nameLower === 'transfer-encoding'
+                    ) {
+                        // turn into a no-op
+                        skip = true;
+                    }
+                }
+                if (!skip) {
+                    debug('not skipping removeHeader', name);
+                    resRemoveHeader.call(res, name);
+                } else {
+                    debug('skipping removeHeader', name);
+                }
+                debug('res.removeHeader - end');
+            };
+
             debug('res.writeHead');
             const resWriteHead = res.writeHead;
             // @ts-ignore
@@ -263,10 +290,17 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                     debug('wsContext does not exist');
                 }
 
-                if (statusCode === 200 && wsContext != null) {
+                if ((statusCode === 200 || statusCode === 204) && wsContext != null) {
                     const wsContextHeaders = wsContext.toHeaders();
                     debug("Adding wsContext headers", wsContextHeaders);
                     obj = Object.assign({}, obj, wsContextHeaders);
+                    // Koa will set status code 204 when the body has been set to
+                    // null. This is probably fine since the main stream
+                    // for WS-over-HTTP is supposed to have an empty
+                    // body anyway.  However, we will be adding WebSocket
+                    // events into the body, so change it to a 200.
+                    statusCode = 200;
+                    reason = 'OK';
                 } else {
                     if (gripInstruct != null) {
                         debug("GripInstruct present");
@@ -314,7 +348,7 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
                 } else {
                     debug('wsContext does not exist' );
                 }
-                if (res.statusCode === 200 && wsContext != null) {
+                if ((res.statusCode === 200 || res.statusCode === 204) && wsContext != null) {
                     debug('Getting outgoing events' );
                     const events = wsContext.getOutgoingEvents();
                     debug('Encoding and writing events', events );
