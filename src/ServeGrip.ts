@@ -43,9 +43,15 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
     isGripProxyRequired: boolean = false;
     _publisher?: Publisher;
 
+    koa: (ctx: any, next: () => Promise<void>) => Promise<void>;
+
     constructor(config?: IServeGripConfig) {
         super('exec');
         this.applyConfig(config);
+        this.koa = async (ctx: any, next: () => Promise<void>) => {
+            await this.run(ctx.req, ctx.res);
+            await next();
+        };
     }
 
     applyConfig(config: IServeGripConfig = {}) {
