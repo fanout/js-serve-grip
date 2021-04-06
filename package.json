@@ -1,6 +1,6 @@
 {
   "name": "@fanoutio/serve-grip",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "author": "Fanout, Inc. <info@fanout.io>",
   "description": "Connect-style Middleware for GRIP",
   "contributors": [
