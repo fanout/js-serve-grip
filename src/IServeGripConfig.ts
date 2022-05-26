@@ -1,7 +1,8 @@
-import { IGripConfig, Publisher } from '@fanoutio/grip';
+import { IGripConfig, PublisherBase } from '@fanoutio/grip';
 
-export default interface IServeGripConfig {
-    grip?: string | IGripConfig | IGripConfig[] | Publisher;
+export interface IServeGripConfig {
+    grip?: string | IGripConfig | IGripConfig[] | PublisherBase<any>;
     gripProxyRequired?: boolean;
     prefix?: string;
+    publisherClass?: { new(): PublisherBase<any> }
 }
