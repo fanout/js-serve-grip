@@ -394,7 +394,7 @@ export default class ServeGrip extends CallableInstance<[IncomingMessage, Server
             }
 
         } catch (ex) {
-            throw ex instanceof Error ? ex : new Error(ex);
+            throw ex instanceof Error ? ex : new Error(String(ex));
         }
 
         debug('ServeGrip#run - end');

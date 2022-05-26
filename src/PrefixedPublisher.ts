@@ -9,7 +9,7 @@ export default class PrefixedPublisher extends Publisher {
         this.prefix = prefix;
     }
 
-    public async publish(channel: string, item: IItem) {
+    public override async publish(channel: string, item: IItem) {
         await super.publish(this.prefix + channel, item);
     }
 }
