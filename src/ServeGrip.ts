@@ -18,15 +18,15 @@ import {
     WebSocketDecodeEventException,
 } from '@fanoutio/grip';
 
-import IServeGripConfig from './IServeGripConfig';
+import { IServeGripConfig } from './IServeGripConfig';
 
 import { ServeGripApiResponse } from './ServeGripApiResponse';
 import { ServeGripApiRequest } from './ServeGripApiRequest';
 
-import GripInstructNotAvailableException from './GripInstructNotAvailableException';
-import GripInstructAlreadyStartedException from './GripInstructAlreadyStartedException';
+import { GripInstructNotAvailableException } from './GripInstructNotAvailableException';
+import { GripInstructAlreadyStartedException } from './GripInstructAlreadyStartedException';
 
-import PrefixedPublisher from './PrefixedPublisher';
+import { PrefixedPublisher } from './PrefixedPublisher';
 
 type NextFunction = (e?: Error) => void;
 
@@ -37,7 +37,7 @@ function flattenHeader(value: undefined | string | string[]) {
     return value;
 }
 
-export default class ServeGrip extends CallableInstance<[IncomingMessage, ServerResponse, NextFunction], void> {
+export class ServeGrip extends CallableInstance<[IncomingMessage, ServerResponse, NextFunction], void> {
     gripProxies?: string | IGripConfig | IGripConfig[] | Publisher;
     prefix: string = '';
     isGripProxyRequired: boolean = false;

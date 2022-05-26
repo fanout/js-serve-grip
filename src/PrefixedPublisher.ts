@@ -1,6 +1,6 @@
 import { IItem, Publisher } from '@fanoutio/grip';
 
-export default class PrefixedPublisher extends Publisher {
+export class PrefixedPublisher extends Publisher {
     private readonly prefix: string;
 
     constructor(base: Publisher, prefix: string) {
