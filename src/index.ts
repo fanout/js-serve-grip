@@ -6,8 +6,5 @@ export * from './IGripApiResponse';
 export * from './IRequestGrip';
 export * from './IResponseGrip';
 export * from './IServeGripConfig';
-
 export * from './ServeGrip';
-
-export * from './ServeGripApiRequest';
-export * from './ServeGripApiResponse';
+export * from './ServeGripBase';
