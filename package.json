@@ -3,7 +3,7 @@
   "version": "1.2.0",
   "author": "Fanout, Inc. <info@fanout.io>",
   "description": "Connect-style Middleware for GRIP",
-  "packageManager": "yarn@1.22.15",
+  "packageManager": "pnpm@7.1.9",
   "contributors": [
     {
       "name": "Katsuyuki Ohmuro",
@@ -23,18 +23,18 @@
   ],
   "types": "./build/src/index.d.ts",
   "scripts": {
-    "prepublishOnly": "npm run build",
-    "build-TEMPORARY_BACKUP": "yarn test && yarn lint && yarn build-package && yarn build-browser",
-    "build": "yarn build-package",
-    "build-browser": "yarn build-browser:clean && yarn build-browser:build-dev && yarn build-browser:build-prod",
+    "prepack": "pnpm run build",
+    "build-TEMPORARY_BACKUP": "pnpm test && pnpm lint && pnpm build-package && pnpm build-browser",
+    "build": "pnpm build-package",
+    "build-browser": "pnpm build-browser:clean && pnpm build-browser:build-dev && pnpm build-browser:build-prod",
     "build-browser:clean": "rimraf browser",
     "build-browser:build-dev": "NODE_ENV=development webpack",
     "build-browser:build-prod": "NODE_ENV=production webpack -p",
-    "build-package": "yarn build-package:clean && yarn build-package:compile",
+    "build-package": "pnpm build-package:clean && pnpm build-package:compile",
     "build-package:clean": "rimraf build",
     "build-package:compile": "tsc --build tsconfig.json && tsc --build tsconfig.esm.json",
     "format": "prettier --write \"src/**/*.{js,ts}\"",
-    "lint": "yarn lint:eslint",
+    "lint": "pnpm lint:eslint",
     "lint:eslint": "eslint src",
     "test": "ts-mocha -p tsconfig.json \"tests/**/*.test.ts\""
   },
@@ -73,7 +73,7 @@
     "webpack-cli": "^3.3.12"
   },
   "dependencies": {
-    "@fanoutio/grip": "link:../js-grip",
+    "@fanoutio/grip": "^3.1.0",
     "callable-instance": "^2.0.0",
     "debug": "^4.1.1"
   }
