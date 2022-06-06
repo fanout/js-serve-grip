@@ -1,5 +1,5 @@
-import GripInstructException from './GripInstructException';
+import { GripInstructException } from './GripInstructException';
 
-export default class GripInstructNotAvailableException extends GripInstructException {
+export class GripInstructNotAvailableException extends GripInstructException {
     message = 'GripInstruct Not Available';
 }

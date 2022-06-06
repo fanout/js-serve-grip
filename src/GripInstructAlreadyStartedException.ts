@@ -1,5 +1,5 @@
-import GripInstructException from './GripInstructException';
+import { GripInstructException } from './GripInstructException';
 
-export default class GripInstructAlreadyStartedException extends GripInstructException {
+export class GripInstructAlreadyStartedException extends GripInstructException {
     message = 'GripInstruct Already Started';
 }

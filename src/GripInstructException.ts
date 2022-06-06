@@ -1,3 +1,3 @@
-export default abstract class GripInstructException {
+export abstract class GripInstructException {
     abstract message: string;
 }

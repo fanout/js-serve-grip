@@ -1,6 +1,6 @@
 import { WebSocketContext } from '@fanoutio/grip';
 
-export default interface IRequestGrip {
+export interface IRequestGrip {
     isProxied: boolean;
     isSigned: boolean;
     needsSigned: boolean;

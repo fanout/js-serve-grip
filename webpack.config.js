@@ -2,7 +2,7 @@ const path = require("path");
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const PATHS = {
-    entryPoint: path.resolve(__dirname, 'src/main.browser.ts'),
+    entryPoint: path.resolve(__dirname, 'src/index.browser.ts'),
     bundles: path.resolve(__dirname, 'browser'),
 }
 
@@ -34,7 +34,9 @@ const config = {
             exclude: /node_modules/,
             options: {
                 compilerOptions: {
+                    composite: false,
                     declaration: false,
+                    declarationMap: false,
                 },
             },
         }],
