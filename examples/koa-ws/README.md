@@ -5,8 +5,8 @@ Example for using serve-grip with WebSockets-over-HTTP in Koa.
 1. To run the example, first build `serve-grip` by typing the following _in the root directory_
 of this repository.
 ```
-npm install
-npm run build
+pnpm install
+pnpm build
 ```
 
 2. Also, you will need to obtain and install Pushpin (https://pushpin.org/). Make sure that the
@@ -17,19 +17,19 @@ Pushpin `routes` file looks like this:
 
 3. You will also need to obtain `wscat` to test WebSockets connections.
 ```
-npm install -g wscat
+pnpm install -g wscat
 ```
 
 4. Next, switch to this example's directory and then type
 ```
-npm install
+pnpm install
 ```
 
 This will install the dependencies for this project, including `serve-grip` and Express.
 
 5. Start the example application.
 ```
-npm run dev
+pnpm dev
 ```
 
 6. In another Terminal window, start Pushpin.

@@ -5,8 +5,8 @@ Example for using serve-grip with HTTP formats in Express.
 1. To run the example, first build `serve-grip` by typing the following _in the root directory_
 of this repository.
 ```
-npm install
-npm run build
+pnpm install
+pnpm build
 ```
 
 2. Also, you will need to obtain and install Pushpin (https://pushpin.org/). Make sure that the
@@ -17,14 +17,14 @@ Pushpin `routes` file looks like this:
 
 3. Next, switch to this example's directory and then type
 ```
-npm install
+pnpm install
 ```
 
 This will install the dependencies for this project, including `serve-grip` and Express.
 
 4. Start the example application.
 ```
-npm run dev
+pnpm dev
 ```
 
 5. In another Terminal window, start Pushpin.
