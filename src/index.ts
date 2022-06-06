@@ -8,3 +8,4 @@ export * from './IResponseGrip';
 export * from './IServeGripConfig';
 export * from './ServeGrip';
 export * from './ServeGripBase';
+export * from './types';

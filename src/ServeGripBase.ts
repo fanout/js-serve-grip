@@ -85,7 +85,7 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
         const res = this.platformResponseToApiResponse(platformResponse);
 
         debug('ServeGrip#run - start');
-        if (req.grip != null) {
+        if (req.getGrip() != null) {
             // This would indicate that we are already running for this request.
             // We don't install ourselves multiple times.
             debug('Already ran for this request, returning true');
@@ -181,13 +181,11 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
                 }
             }
 
-            Object.assign(req, {
-                grip: {
-                    isProxied,
-                    isSigned,
-                    needsSigned,
-                    wsContext,
-                },
+            req.setGrip({
+                isProxied,
+                isSigned,
+                needsSigned,
+                wsContext,
             });
 
             debug('Set up req.grip - end');
@@ -196,29 +194,27 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
             debug('Set up res.grip - start');
 
             let gripInstruct: GripInstruct | null = null;
-            Object.assign(res, {
-                grip: {
-                    startInstruct() {
-                        try {
-                            debug('startInstruct - start');
-                            // In WebSocket-over-HTTP or if request is not proxied,
-                            // startInstruct is not available.
-                            if (wsContext == null && isProxied) {
-                                if (gripInstruct != null) {
-                                    debug('ERROR - GripInstruct is already started');
-                                    throw new GripInstructAlreadyStartedException();
-                                }
-                                debug('Creating GripInstruct');
-                                gripInstruct = new GripInstruct();
-                                return gripInstruct;
-                            } else {
-                                debug('ERROR - GripInstruct is not available');
-                                throw new GripInstructNotAvailableException();
+            res.setGrip({
+                startInstruct() {
+                    try {
+                        debug('startInstruct - start');
+                        // In WebSocket-over-HTTP or if request is not proxied,
+                        // startInstruct is not available.
+                        if (wsContext == null && isProxied) {
+                            if (gripInstruct != null) {
+                                debug('ERROR - GripInstruct is already started');
+                                throw new GripInstructAlreadyStartedException();
                             }
-                        } finally {
-                            debug('startInstruct - end');
+                            debug('Creating GripInstruct');
+                            gripInstruct = new GripInstruct();
+                            return gripInstruct;
+                        } else {
+                            debug('ERROR - GripInstruct is not available');
+                            throw new GripInstructNotAvailableException();
                         }
-                    },
+                    } finally {
+                        debug('startInstruct - end');
+                    }
                 },
             });
 

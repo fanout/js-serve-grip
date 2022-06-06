@@ -16,8 +16,7 @@ import { IServeGripConfig } from './IServeGripConfig';
 import { ServeGripBase } from "./ServeGripBase";
 import { IGripApiResponse } from "./IGripApiResponse";
 import { IGripApiRequest } from "./IGripApiRequest";
-import { IRequestGrip } from "./IRequestGrip";
-import { IResponseGrip } from "./IResponseGrip";
+import { GripRequest, GripResponse } from "./types";
 
 type NextFunction = (e?: Error) => void;
 
@@ -49,29 +48,33 @@ export class ServeGrip extends ServeGripBase<IncomingMessage, ServerResponse> {
     }
 
     platformRequestToApiRequest(req: IncomingMessage) {
-        const apiRequest = NodeApiRequest.for(req);
-        Object.defineProperty(apiRequest, 'grip', {
-            get(): IRequestGrip {
-                return (this.getWrapped() as any).grip;
-            },
-            set(value: IRequestGrip) {
-                (this.getWrapped() as any).grip = value;
-            }
-        });
-        return apiRequest as IGripApiRequest<IncomingMessage>;
+        const apiRequest = NodeApiRequest.for(req) as IGripApiRequest<IncomingMessage>;
+        if(apiRequest.getGrip == null) {
+            apiRequest.getGrip = () => {
+                return (req as GripRequest<IncomingMessage>).grip;
+            };
+        }
+        if(apiRequest.setGrip == null) {
+            apiRequest.setGrip = (grip) => {
+                (req as GripRequest<IncomingMessage>).grip = grip;
+            };
+        }
+        return apiRequest;
     }
 
     platformResponseToApiResponse(res: ServerResponse) {
-        const apiResponse = NodeApiResponse.for(res);
-        Object.defineProperty(apiResponse, 'grip', {
-            get(): IResponseGrip {
-                return (this.getWrapped() as any).grip;
-            },
-            set(value: IResponseGrip) {
-                (this.getWrapped() as any).grip = value;
-            }
-        });
-        return apiResponse as IGripApiResponse<ServerResponse>;
+        const apiResponse = NodeApiResponse.for(res) as IGripApiResponse<ServerResponse>;
+        if(apiResponse.getGrip == null) {
+            apiResponse.getGrip = () => {
+                return (res as GripResponse<ServerResponse>).grip;
+            };
+        }
+        if(apiResponse.setGrip == null) {
+            apiResponse.setGrip = (grip) => {
+                (res as GripResponse<ServerResponse>).grip = grip;
+            };
+        }
+        return apiResponse;
     }
 
     monkeyPatchResMethodsForWebSocket(apiResponse: IGripApiResponse<ServerResponse>, wsContext: WebSocketContext) {
