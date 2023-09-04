@@ -11,7 +11,6 @@ import {
     getWebSocketContextFromApiRequest,
     isApiRequestWsOverHttp,
     validateSig,
-    Auth,
     ConnectionIdMissingException,
     WebSocketDecodeEventException,
 } from '@fanoutio/grip';
@@ -117,13 +116,13 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
                 const clients = publisher.clients;
 
                 if (clients.length > 0) {
-                    if (clients.every((client) => client.auth instanceof Auth.Jwt && client.auth.key != null)) {
+                    if (clients.every((client) => client.getVerifyKey() != null)) {
                         needsSigned = true;
                         // If all proxies have keys, then only consider the request
                         // signed if at least one of them has signed it
                         if (
                             clients.some((client) =>
-                                validateSig(gripSigHeader, (client.auth as Auth.Jwt).key as Buffer),
+                                validateSig(gripSigHeader, client.getVerifyKey()!, client.getVerifyIss())
                             )
                         ) {
                             isProxied = true;
