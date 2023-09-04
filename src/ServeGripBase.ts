@@ -39,13 +39,42 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
     }
 
     applyConfig(config: IServeGripConfig = {}) {
-        const { grip, gripProxyRequired = false, prefix = '' } = config;
+        const { grip, gripVerifyKey, gripProxyRequired = false, prefix = '' } = config;
 
         if (this._publisher != null) {
             throw new Error('applyConfig called on ServeGrip that already has an instantiated publisher.');
         }
 
-        this.gripProxies = grip;
+        let gripProxies: string | IGripConfig[] | PublisherBase<any> | undefined = undefined;
+        if (grip != null) {
+            if (grip instanceof PublisherBase) {
+                // by reference
+                gripProxies = grip;
+            } else if (typeof grip === 'string') {
+                if (gripVerifyKey != null) {
+                    // Add gripVerifyKey to GRIP URL if verify-key doesn't already exist on it
+                    const url = new URL(grip);
+                    if (url.searchParams.get('verify-key') == null) {
+                        const verifyKeyValue = gripVerifyKey instanceof Buffer ? 'base64:' + gripVerifyKey.toString('base64') : gripVerifyKey;
+                        url.searchParams.set('verify-key', verifyKeyValue);
+                    }
+                    gripProxies = url.toString();
+                } else {
+                    // copy the GRIP URL directly
+                    gripProxies = grip;
+                }
+            } else {
+                gripProxies = (Array.isArray(grip) ? grip : [ grip ]).map(config => {
+                    const gripProxy = {...config};
+                    if (gripProxy.verify_key == null && gripVerifyKey != null) {
+                        gripProxy.verify_key = gripVerifyKey;
+                    }
+                    return gripProxy;
+                });
+            }
+        }
+
+        this.gripProxies = gripProxies;
         this.isGripProxyRequired = gripProxyRequired;
         this.prefix = prefix;
         this._publisherClass = config.publisherClass;
@@ -59,7 +88,7 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
                 debug('ServeGrip#getPublisher - ERROR - no grip proxies specified');
                 throw new Error('No Grip configuration provided. Provide one to the constructor of ServeGrip, or call applyConfig() with a Grip configuration, before calling getPublisher().');
             }
-            if (this.gripProxies instanceof PublisherBase<any>) {
+            if (this.gripProxies instanceof PublisherBase) {
                 debug('ServeGrip#getPublisher - initializing with existing publisher');
                 publisher = this.gripProxies;
             } else {
