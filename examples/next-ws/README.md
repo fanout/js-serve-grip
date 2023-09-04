@@ -5,8 +5,8 @@ Example for using serve-grip with WebSockets-over-HTTP in Next.js.
 1. To run the example, first build `serve-grip` by typing the following _in the root directory_
 of this repository.
 ```
-pnpm install
-pnpm build
+npm install
+npm run build
 ```
 
 2. Also, you will need to obtain and install Pushpin (https://pushpin.org/). Make sure that the
@@ -17,19 +17,19 @@ Pushpin `routes` file looks like this:
 
 3. You will also need to obtain `wscat` to test WebSockets connections.
 ```
-pnpm install -g wscat
+npm install -g wscat
 ```
 
 4. Next, switch to this example's directory and then type
 ```
-pnpm install
+npm install
 ```
 
 This will install the dependencies for this project, including `serve-grip`, Next.js, and React.
 
 5. Start the example application.
 ```
-pnpm dev
+npm run dev
 ```
 
 6. In another Terminal window, start Pushpin.

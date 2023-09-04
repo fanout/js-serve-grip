@@ -5,8 +5,8 @@ Example for using serve-grip with WebSockets-over-HTTP in Express.
 1. To run the example, first build `serve-grip` by typing the following _in the root directory_
 of this repository.
 ```
-pnpm install
-pnpm run build
+npm install
+npm run build
 ```
 
 2. Also, you will need to obtain and install Pushpin (https://pushpin.org/). Make sure that the
@@ -22,14 +22,14 @@ npm install -g wscat
 
 4. Next, switch to this example's directory and then type
 ```
-pnpm install
+npm install
 ```
 
 This will install the dependencies for this project, including `serve-grip` and Express.
 
 5. Start the example application.
 ```
-pnpm dev
+npm run dev
 ```
 
 6. In another Terminal window, start Pushpin.
