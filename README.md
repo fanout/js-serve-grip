@@ -14,7 +14,7 @@ Supported GRIP servers include:
 * [Pushpin](http://pushpin.org/)
 * [Fanout Cloud](https://fanout.io/cloud/)
 
-Authors: Katsuyuki Ohmuro <kats@fanout.io>, Konstantin Bokarius <kon@fanout.io>
+Authors: Katsuyuki Omuro <komuro@fastly.com>, Konstantin Bokarius <kon@fanout.io>
 
 ### Introduction
 

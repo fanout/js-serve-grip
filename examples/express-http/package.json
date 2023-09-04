@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node server.js"
   },
-  "author": "Katsuyuki Ohmuro <kats@fanout.io>",
+  "author": "Katsuyuki Omuro <komuro@fastly.com>",
   "license": "MIT",
   "dependencies": {
     "@fanoutio/serve-grip": "file:../../",
