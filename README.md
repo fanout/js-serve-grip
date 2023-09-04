@@ -7,12 +7,14 @@ Therefore, this library is usable with frameworks such as the following:
 * [connect](https://github.com/senchalabs/Connect)
 * [Express](https://expressjs.com/)
 * [Next.js](https://nextjs.org/)
-* [Koa](https://koajs.org/) * experimental support
+* [Koa](https://koajs.org/) *experimental support
 
 Supported GRIP servers include:
 
 * [Pushpin](http://pushpin.org/)
-* [Fanout Cloud](https://fanout.io/cloud/)
+* [Fastly Fanout](https://docs.fastly.com/products/fanout)
+
+This library also supports legacy services hosted by [Fanout](https://fanout.io/) Cloud.
 
 Authors: Katsuyuki Omuro <komuro@fastly.com>, Konstantin Bokarius <kon@fanout.io>
 
@@ -21,10 +23,15 @@ Authors: Katsuyuki Omuro <komuro@fastly.com>, Konstantin Bokarius <kon@fanout.io
 [GRIP](https://pushpin.org/docs/protocols/grip/) is a protocol that enables a web service to
 delegate realtime push behavior to a proxy component, using HTTP and headers.
 
-`@fanoutio/serve-grip` parses the `Grip-Sig` header in any requests to detect if they came through a Grip
-proxy, and provides your route handler with tools to handle such requests.  This includes
-access to information about whether the current request is proxied or is signed, as well as
-methods to issue any hold instructions to the GRIP proxy.
+`@fanoutio/serve-grip` is a server middleware that works with frameworks such as Express and
+Next.js. It:
+* gives a simple and straightforward way to configure these frameworks against your GRIP proxy
+* parses the `Grip-Sig` header in any requests to detect if they came through a Grip proxy
+* provides your route handler with tools to handle such requests, such as:
+  * access to information about whether the current request is proxied or is signed
+  * methods you can call to issue any instructions to the GRIP proxy
+* provides access to the the publisher object, enabling your application to publish messages through
+  the GRIP publisher.
 
 Additionally, `serve-grip` also handles
 [WebSocket-Over-HTTP processing](https://pushpin.org/docs/protocols/websocket-over-http/) so
@@ -44,8 +51,8 @@ Import the `ServeGrip` class and instantiate the middleware. Then install it bef
 
 Example:
 ```javascript
-const express = require( 'express' );
-const { ServeGrip } = require( '@fanoutio/serve-grip' );
+import express from 'express';
+import { ServeGrip } from '@fanoutio/serve-grip';
 
 const app = express();
 
@@ -73,9 +80,9 @@ as the `.koa` property on the object. Install it before your routes.
 
 Example:
 ```javascript
-const Koa = require( 'koa' );
-const Router = require( '@koa/router' );
-const { ServeGrip } = require( '@fanoutio/serve-grip' );
+import Koa from 'koa';
+import Router from '@koa/router';
+import { ServeGrip } from '@fanoutio/serve-grip';
 
 const app = new Koa();
 
@@ -149,24 +156,58 @@ middleware in a shared location and reference it from your API routes.
 configuration object that can be used to configure the instance, such as the GRIP proxies to use
 for publishing or whether incoming requests should require a GRIP proxy.
 
+The following is an example of configuration against Pushpin running on localhost:
 ```javascript
 import { ServeGrip } from '@fanoutio/serve-grip';
 const serveGrip = new ServeGrip({
     grip: {
-        control_uri: 'https://api.fanout.io/realm/<realm-name>/publish/', // Publishing endpoint
-        control_iss: '<realm-name>', // (optional) Needed for servers that require authorization
-        key: '<realm-key>',          // (optinoal) Needed for servers that require authorization
+        control_uri: 'https://localhost:5561/',   // Control URI for Pushpin publisher
+        control_iss: '<issuer>',                  // (opt.) iss needed for publishing, if required by Pushpin
+        key: '<publish-key>',                     // (opt.) key needed for publishing, if required by Pushpin
     },
     isGripProxyRequired: true,
 });
 ```
 
+The following is an example of configuration against Fastly Fanout:
+```javascript
+import { ServeGrip } from '@fanoutio/serve-grip';
+const serveGrip = new ServeGrip({
+    grip: {
+        control_uri: 'https://api.fastly.com/service/<service-id>/',   // Control URI
+        key: '<fastly-api-token>',             // Authorization key for publishing (Fastly API Token)
+        verify_iss: 'fastly:<service-id>',     // Fastly issuer used for validating Grip-Sig
+        verify_key: '<verify-key>',            // Fastly public key used for validating Grip-Sig
+    },
+    isGripProxyRequired: true,
+});
+```
+
+Often the configuration is done using a `GRIP_URL` (and if needed, `GRIP_VERIFY_KEY`), allowing for configuration using simple strings. This allows for configuration from environment variables:
+
+```
+GRIP_URL="https://api.fastly.com/service/<service-id>/?verify-iss=fastly:<service-id>&key=<fastly-api-token>"
+GRIP_VERIFY_KEY="base64:LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFQ0tvNUExZWJ5RmNubVZWOFNFNU9uKzhHODFKeQpCalN2Y3J4NFZMZXRXQ2p1REFtcHBUbzN4TS96ejc2M0NPVENnSGZwLzZsUGRDeVlqanFjK0dNN3N3PT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t"
+```
+
+```javascript
+import { ServeGrip } from '@fanoutio/serve-grip';
+
+const serveGrip = new ServeGrip({
+    grip: process.env.GRIP_URL,
+    gripVerifyKey: process.env.GRIP_VERIFY_KEY,
+    isGripProxyRequired: true,
+});
+```
+
 Available options:
-| Key | Value |
-| --- | --- |
-| `grip` | A definition of GRIP proxies used to publish messages, or a preconfigured Publisher object from `@fanoutio/grip`. See below for details. |
-| `gripProxyRequired` | A boolean value representing whether all incoming requests should require that they be called behind a GRIP proxy.  If this is true and a GRIP proxy is not detected, then a `501 Not Implemented` error will be issued. Defaults to `false`. |
-| `prefix` | An optional string that will be prepended to the name of channels being published to. This can be used for namespacing. Defaults to `''`. |
+
+| Key                 | Value                                                                                                                                                                                                                                                                                              |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `grip`              | A definition of GRIP proxies used to publish messages, or a preconfigured Publisher object from `@fanoutio/grip`. See below for details.                                                                                                                                                           |
+| `gripVerifyKey`     | (optional) A string or Buffer that can be used to specify the `verify-key` component of the GRIP configuration.<br />Applies only if -<br />* `grip` is provided as a string, configuration object, or array of configuration objects<br />* `grip` does not already contain a `verify_key` value. |
+| `gripProxyRequired` | (optional) A boolean value representing whether all incoming requests should require that they be called behind a GRIP proxy.  If this is true and a GRIP proxy is not detected, then a `501 Not Implemented` error will be issued. Defaults to `false`.                                           |
+| `prefix`            | (optional) A string that will be prepended to the name of channels being published to. This can be used for namespacing. Defaults to `''`.                                                                                                                                                         |
 
 In most cases your application will construct a singleton instance of this class and use it as
 the middleware.
@@ -175,39 +216,41 @@ The `grip` parameter may be provided as any of the following:
 
 1. An object with the following fields:
 
-| Key | Value |
-| --- | --- |
-| `control_uri` | Publishing endpoint for the GRIP proxy. |
-| `control_iss` | A claim string that is needed for servers that require authorization. For Fanout Cloud, this is the Realm ID. |
-| `key` | A key string that is needed for servers that require authorization. For Fanout Cloud, this is the Realm Key. |
+   | Field         | Description                                                                                       |
+   |---------------|---------------------------------------------------------------------------------------------------|
+   | `control_uri` | The Control URI of the GRIP client.                                                               |
+   | `control_iss` | (optional) The Control ISS, if required by the GRIP client.                                       |
+   | `key`         | (optional) string or Buffer. The key to use with the Control ISS, if required by the GRIP client. |
+   | `verify_iss`  | (optional) The ISS to use when validating a GRIP signature.                                       |
+   | `verify_key`  | (optional) string or Buffer. The key to use when validating a GRIP signature.                     |
 
 2. An array of such objects.
 
 3. A GRIP URI, which is a string that encodes the above as a single string.
 
-4. A `Publisher` object that you have instantiated and configrued yourself, from `@fanoutio/grip`.
+4. (advanced) A `Publisher` object that you have instantiated and configured yourself, from `@fanoutio/grip`.
 
 ### Handling a route
 
 After the middleware has run, your handler will receive `req` and `res` objects that have been
 extended with `grip` properties.  These provide access to the following:
 
-| Key | Description |
-| --- | --- |
-| `req.grip.isProxied` | A boolean value indicating whether the current request has been called via a GRIP proxy. |
-| `req.grip.isSigned` | A boolean value indicating whether the current request is a signed request called via a GRIP proxy. |
+| Key                  | Description                                                                                                                                                                         |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `req.grip.isProxied` | A boolean value indicating whether the current request has been called via a GRIP proxy.                                                                                            |
+| `req.grip.isSigned`  | A boolean value indicating whether the current request is a signed request called via a GRIP proxy.                                                                                 |
 | `req.grip.wsContext` | If the current request has been made through WebSocket-Over-HTTP, then a `WebSocketContext` object for the current request. See `@fanoutio/grip` for details on `WebSocketContext`. |
 
-| Key | Description |
-| --- | --- |
+| Key                        | Description                                                                                                                                                               |
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `res.grip.startInstruct()` | Returns an instance of `GripInstruct`, which can be used to issue instructions to the GRIP proxy to hold connections. See `@fanoutio/grip` for details on `GripInstruct`. |
 
 To publish messages, call `serveGrip.getPublisher()` to obtain a
 `Publisher`. Use it to publish messages using the endpoints and 
 prefix specified to the `ServeGrip` constructor.
 
-| Key | Description |
-| --- | --- |
+| Key                        | Description                                                                                                                                                                                |
+|----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `serveGrip.getPublisher()` | Returns an instance of `Publisher`, which can be used to publish messages to the provided publishing endpoints using the provided prefix. See `@fanoutio/grip` for details on `Publisher`. |
 
 ### Examples
