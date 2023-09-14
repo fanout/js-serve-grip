@@ -23,7 +23,6 @@
   "types": "./build/src/index.d.ts",
   "scripts": {
     "prepack": "npm run build",
-    "build-TEMPORARY_BACKUP": "npm run test && npm run lint && npm run build-package && npm run build-browser",
     "build": "npm run build-package",
     "build-browser": "npm run build-browser:clean && npm run build-browser:build-dev && npm run build-browser:build-prod",
     "build-browser:clean": "rimraf browser",
