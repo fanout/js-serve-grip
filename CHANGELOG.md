@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+- Bump dependency versions
+
 ## [1.3.0] - 2023-09-04
 - Revert to npm instead of pnpm
 - Support Fastly Fanout
