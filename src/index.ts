@@ -4,6 +4,5 @@ export * from './GripInstructNotAvailableException.js';
 export * from './IRequestGrip.js';
 export * from './IResponseGrip.js';
 export * from './IServeGripConfig.js';
-export * from './node/ServeGrip.js';
 export * from './ServeGripBase.js';
 export * from './types.js';
