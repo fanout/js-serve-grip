@@ -5,7 +5,7 @@ const { ServeGrip } = require( '@fanoutio/serve-grip' );
 
 const PORT = 3000;
 const CHANNEL_NAME = 'test';
-const PUSHPIN_URL = "http://localhost:5561/";
+const PUSHPIN_URL = 'http://localhost:5561/';
 
 const app = new Koa();
 
@@ -33,7 +33,7 @@ router.get('/api/stream', ctx => {
     } else {
 
         ctx.set('Content-Type', 'text/plain');
-        ctx.body = "[not proxied]\n";
+        ctx.body = '[not proxied]\n';
 
     }
 

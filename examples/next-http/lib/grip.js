@@ -1,7 +1,7 @@
-import { ServeGrip } from "@fanoutio/serve-grip";
+import { ServeGrip } from '@fanoutio/serve-grip';
 
 export const CHANNEL_NAME = 'test';
-const PUSHPIN_URL = "http://localhost:5561/";
+const PUSHPIN_URL = 'http://localhost:5561/';
 
 export const serveGrip = new ServeGrip({
     grip: {

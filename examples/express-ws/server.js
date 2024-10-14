@@ -4,7 +4,7 @@ const { WebSocketMessageFormat } = require( '@fanoutio/grip' );
 
 const PORT = 3000;
 const CHANNEL_NAME = 'test';
-const PUSHPIN_URL = "http://localhost:5561/";
+const PUSHPIN_URL = 'http://localhost:5561/';
 
 const app = express();
 

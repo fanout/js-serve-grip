@@ -1,37 +1,33 @@
 import CallableInstance from 'callable-instance';
 
-import debug from './debug';
+import debug from './debug.js';
 
 import {
     GripInstruct,
     IGripConfig,
     Publisher,
-    PublisherBase,
     WebSocketContext,
-    getWebSocketContextFromApiRequest,
-    isApiRequestWsOverHttp,
     validateSig,
     ConnectionIdMissingException,
     WebSocketDecodeEventException,
 } from '@fanoutio/grip';
 
-import { IServeGripConfig } from './IServeGripConfig';
+import { IServeGripConfig } from './IServeGripConfig.js';
 
-import { GripInstructNotAvailableException } from './GripInstructNotAvailableException';
-import { GripInstructAlreadyStartedException } from './GripInstructAlreadyStartedException';
+import { GripInstructNotAvailableException } from './GripInstructNotAvailableException.js';
+import { GripInstructAlreadyStartedException } from './GripInstructAlreadyStartedException.js';
 
-import { PrefixedPublisher } from './PrefixedPublisher';
-import { IGripApiResponse } from "./IGripApiResponse";
-import { IGripApiRequest } from "./IGripApiRequest";
+import type {IRequestGrip} from "./IRequestGrip.js";
+import type {IResponseGrip} from "./IResponseGrip.js";
 
 type NextFunction = (e?: Error) => void;
 
 export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstance<[TRequest, TResponse, NextFunction], void> {
-    gripProxies?: string | IGripConfig | IGripConfig[] | PublisherBase<any>;
+    gripProxies?: string | IGripConfig | IGripConfig[] | Publisher;
     prefix: string = '';
     isGripProxyRequired: boolean = false;
-    _publisherClass?: { new(): PublisherBase<any> };
-    _publisher?: PublisherBase<any>;
+    _publisherClass?: { new(): Publisher };
+    _publisher?: Publisher;
 
     protected constructor(config?: IServeGripConfig, fn: string = 'run') {
         super(fn);
@@ -45,9 +41,9 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
             throw new Error('applyConfig called on ServeGrip that already has an instantiated publisher.');
         }
 
-        let gripProxies: string | IGripConfig[] | PublisherBase<any> | undefined = undefined;
+        let gripProxies: string | IGripConfig[] | Publisher | undefined = undefined;
         if (grip != null) {
-            if (grip instanceof PublisherBase) {
+            if (grip instanceof Publisher) {
                 // by reference
                 gripProxies = grip;
             } else if (typeof grip === 'string') {
@@ -83,21 +79,21 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
     getPublisher(): Publisher {
         debug('ServeGrip#getPublisher - start');
         if (this._publisher == null) {
-            let publisher: PublisherBase<any>;
+            let publisher: Publisher;
             if (this.gripProxies == null) {
                 debug('ServeGrip#getPublisher - ERROR - no grip proxies specified');
                 throw new Error('No Grip configuration provided. Provide one to the constructor of ServeGrip, or call applyConfig() with a Grip configuration, before calling getPublisher().');
             }
-            if (this.gripProxies instanceof PublisherBase) {
+            if (this.gripProxies instanceof Publisher) {
                 debug('ServeGrip#getPublisher - initializing with existing publisher');
                 publisher = this.gripProxies;
             } else {
                 debug('ServeGrip#getPublisher - initializing with grip settings', this.gripProxies);
-                publisher = new (this._publisherClass ?? Publisher)();
-                publisher.applyConfig(this.gripProxies);
+                publisher = new (this._publisherClass ?? Publisher)(undefined, { prefix: this.prefix });
+                publisher.applyConfigs(this.gripProxies);
             }
             debug('ServeGrip#getPublisher - instantiating prefixed publisher')
-            this._publisher = new PrefixedPublisher(publisher, this.prefix);
+            this._publisher = publisher;
         } else {
             debug('returning publisher');
         }
@@ -105,15 +101,23 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
         return this._publisher;
     }
 
-    abstract platformRequestToApiRequest(req: TRequest): IGripApiRequest<TRequest>;
-    abstract platformResponseToApiResponse(res: TResponse): IGripApiResponse<TResponse>;
+    abstract getRequestGrip(req: TRequest): IRequestGrip | undefined;
+    abstract setRequestGrip(req: TRequest, grip: IRequestGrip): void;
+    abstract isRequestWsOverHttp(req: TRequest): boolean;
+    abstract getRequestWebSocketContext(req: TRequest): Promise<WebSocketContext>;
+    abstract getRequestHeaderValue(req: TRequest, key: string): string | undefined;
 
-    async run(platformRequest: TRequest, platformResponse: TResponse): Promise<boolean> {
-        const req = this.platformRequestToApiRequest(platformRequest);
-        const res = this.platformResponseToApiResponse(platformResponse);
+    abstract setResponseGrip(res: TResponse, grip: IResponseGrip): void;
+    abstract setResponseStatus(res: TResponse, code: number): void;
+    abstract endResponse(res: TResponse, chunk: string): TResponse;
+
+    abstract monkeyPatchResMethodsForWebSocket(res: TResponse, wsContext: WebSocketContext): void;
+    abstract monkeyPatchResMethodsForGripInstruct(res: TResponse, gripInstructGetter: () => GripInstruct | null): void;
+
+    async run(req: TRequest, res: TResponse): Promise<boolean> {
 
         debug('ServeGrip#run - start');
-        if (req.getGrip() != null) {
+        if (this.getRequestGrip(req) != null) {
             // This would indicate that we are already running for this request.
             // We don't install ourselves multiple times.
             debug('Already ran for this request, returning true');
@@ -124,8 +128,8 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
             // Config check
             if (this.gripProxies == null) {
                 debug('ERROR - No Grip configuration provided. Send error, returning false');
-                res.setStatus(500);
-                res.end('No Grip configuration provided.\n');
+                this.setResponseStatus(res, 500);
+                this.endResponse(res, 'No Grip configuration provided.\n');
                 return false;
             }
 
@@ -134,7 +138,7 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
             // ## Set up req.grip
             debug('Set up req.grip - start');
 
-            const gripSigHeader = req.getHeaderValue('grip-sig');
+            const gripSigHeader = this.getRequestHeaderValue(req, 'grip-sig');
 
             let isProxied = false;
             let isSigned = false;
@@ -145,13 +149,13 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
                 const clients = publisher.clients;
 
                 if (clients.length > 0) {
-                    if (clients.every((client) => client.getVerifyKey() != null)) {
+                    if (clients.every((client) => client.getVerifyKey?.() != null)) {
                         needsSigned = true;
                         // If all proxies have keys, then only consider the request
                         // signed if at least one of them has signed it
                         if (
                             clients.some((client) =>
-                                validateSig(gripSigHeader, client.getVerifyKey()!, client.getVerifyIss())
+                                validateSig(gripSigHeader, client.getVerifyKey?.() ?? '', client.getVerifyIss?.())
                             )
                         ) {
                             isProxied = true;
@@ -178,38 +182,38 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
                 // If we require a GRIP proxy but we detect there is
                 // not one, we needs to fail now
                 debug('ERROR - isGripProxyRequired is true, but is not proxied. Send error, returning false.');
-                res.setStatus(501);
-                res.end('Not Implemented.\n');
+                this.setResponseStatus(res, 501);
+                this.endResponse(res, 'Not Implemented.\n');
                 return false;
             }
 
             let wsContext: WebSocketContext | null = null;
 
-            if (isApiRequestWsOverHttp(req)) {
+            if (this.isRequestWsOverHttp(req)) {
                 try {
-                    wsContext = await getWebSocketContextFromApiRequest(req);
+                    wsContext = await this.getRequestWebSocketContext(req);
                 } catch(ex) {
                     if (ex instanceof ConnectionIdMissingException) {
                         debug("ERROR - connection-id header needed. Send Error, returning false");
-                        res.setStatus(400);
-                        res.end('WebSocket event missing connection-id header.\n');
+                        this.setResponseStatus(res, 400);
+                        this.endResponse(res, 'WebSocket event missing connection-id header.\n');
                         return false;
                     }
                     if (ex instanceof WebSocketDecodeEventException) {
                         debug("ERROR - error parsing websocket events. Send Error, returning false");
-                        res.setStatus(400);
-                        res.end('Error parsing WebSocket events.\n');
+                        this.setResponseStatus(res, 400);
+                        this.endResponse(res, 'Error parsing WebSocket events.\n');
                         return false;
                     }
                     debug("ERROR - unknown exception getting web socket context from request");
                     debug(ex);
-                    res.setStatus(400);
-                    res.end('Error getting web socket Context.\n');
+                    this.setResponseStatus(res, 400);
+                    this.endResponse(res, 'Error getting web socket Context.\n');
                     return false;
                 }
             }
 
-            req.setGrip({
+            this.setRequestGrip(req, {
                 isProxied,
                 isSigned,
                 needsSigned,
@@ -222,7 +226,7 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
             debug('Set up res.grip - start');
 
             let gripInstruct: GripInstruct | null = null;
-            res.setGrip({
+            this.setResponseGrip(res, {
                 startInstruct() {
                     try {
                         debug('startInstruct - start');
@@ -272,7 +276,4 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
         debug('ServeGrip#run - end');
         return true;
     }
-
-    abstract monkeyPatchResMethodsForWebSocket(res: IGripApiResponse<any>, wsContext: WebSocketContext): void;
-    abstract monkeyPatchResMethodsForGripInstruct(res: IGripApiResponse<any>, gripInstructGetter: () => GripInstruct | null): void;
 }

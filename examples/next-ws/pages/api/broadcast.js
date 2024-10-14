@@ -1,5 +1,5 @@
-import { WebSocketMessageFormat } from "@fanoutio/grip";
-import { CHANNEL_NAME, serveGrip } from "../../lib/grip";
+import { WebSocketMessageFormat } from '@fanoutio/grip';
+import { CHANNEL_NAME, serveGrip } from '../../lib/grip';
 
 export default async (req, res) => {
 

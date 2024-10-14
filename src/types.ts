@@ -1,5 +1,5 @@
-import { IRequestGrip } from "./IRequestGrip";
-import { IResponseGrip } from "./IResponseGrip";
+import { IRequestGrip } from './IRequestGrip.js';
+import { IResponseGrip } from './IResponseGrip.js';
 
 export type GripRequest<TRequest> = TRequest & {
   grip?: IRequestGrip;
