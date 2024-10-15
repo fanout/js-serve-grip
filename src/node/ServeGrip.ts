@@ -1,22 +1,33 @@
-import { IncomingMessage, ServerResponse, OutgoingHttpHeaders } from 'http';
+import {
+    type IncomingMessage,
+    type ServerResponse,
+    type OutgoingHttpHeaders,
+} from 'node:http';
 
-import debug from './debug';
+import debug from '../debug.js';
 
 import {
     GripInstruct,
     WebSocketContext,
     encodeWebSocketEvents,
     Channel,
-    IApiResponse,
-    NodeApiRequest,
-    NodeApiResponse,
+    isNodeReqWsOverHttp,
+    getWebSocketContextFromNodeReq,
 } from '@fanoutio/grip';
 
-import { IServeGripConfig } from './IServeGripConfig';
-import { ServeGripBase } from "./ServeGripBase";
-import { IGripApiResponse } from "./IGripApiResponse";
-import { IGripApiRequest } from "./IGripApiRequest";
-import { GripRequest, GripResponse } from "./types";
+import { type IRequestGrip } from '../IRequestGrip.js';
+import { type IResponseGrip } from '../IResponseGrip.js';
+import { type IServeGripConfig } from '../IServeGripConfig.js';
+import { ServeGripBase } from '../ServeGripBase.js';
+
+declare module 'node:http' {
+    interface IncomingMessage {
+        grip?: IRequestGrip;
+    }
+    interface ServerResponse {
+        grip?: IResponseGrip;
+    }
+}
 
 type NextFunction = (e?: Error) => void;
 
@@ -31,10 +42,10 @@ export class ServeGrip extends ServeGripBase<IncomingMessage, ServerResponse> {
         };
     }
 
-    exec(platformRequest: IncomingMessage, platformResponse: ServerResponse, fn: NextFunction) {
+    exec(req: IncomingMessage, res: ServerResponse, fn: NextFunction) {
         debug('ServeGrip#exec - serveGrip invoked as Middleware function');
         let err: Error | undefined;
-        this.run(platformRequest, platformResponse)
+        this.run(req, res)
             .catch((ex) => (err = ex))
             .then((result) => {
                 if (err !== undefined) {
@@ -47,39 +58,43 @@ export class ServeGrip extends ServeGripBase<IncomingMessage, ServerResponse> {
             });
     }
 
-    platformRequestToApiRequest(req: IncomingMessage) {
-        const apiRequest = NodeApiRequest.for(req) as IGripApiRequest<IncomingMessage>;
-        if(apiRequest.getGrip == null) {
-            apiRequest.getGrip = () => {
-                return (req as GripRequest<IncomingMessage>).grip;
-            };
-        }
-        if(apiRequest.setGrip == null) {
-            apiRequest.setGrip = (grip) => {
-                (req as GripRequest<IncomingMessage>).grip = grip;
-            };
-        }
-        return apiRequest;
+    getRequestGrip(req: IncomingMessage) {
+        return req.grip;
     }
 
-    platformResponseToApiResponse(res: ServerResponse) {
-        const apiResponse = NodeApiResponse.for(res) as IGripApiResponse<ServerResponse>;
-        if(apiResponse.getGrip == null) {
-            apiResponse.getGrip = () => {
-                return (res as GripResponse<ServerResponse>).grip;
-            };
-        }
-        if(apiResponse.setGrip == null) {
-            apiResponse.setGrip = (grip) => {
-                (res as GripResponse<ServerResponse>).grip = grip;
-            };
-        }
-        return apiResponse;
+    setRequestGrip(req: IncomingMessage, grip: IRequestGrip) {
+        req.grip = grip;
     }
 
-    monkeyPatchResMethodsForWebSocket(apiResponse: IGripApiResponse<ServerResponse>, wsContext: WebSocketContext) {
-        const res = apiResponse.getWrapped();
+    isRequestWsOverHttp(req: IncomingMessage) {
+        return isNodeReqWsOverHttp(req);
+    }
 
+    getRequestWebSocketContext(req: IncomingMessage) {
+        return getWebSocketContextFromNodeReq(req);
+    }
+
+    getRequestHeaderValue(req: IncomingMessage, key: string)  {
+        let value = req.headers[key];
+        if(Array.isArray(value)) {
+            value = value[0];
+        }
+        return value;
+    }
+
+    setResponseGrip(res: ServerResponse, grip: IResponseGrip) {
+        res.grip = grip;
+    }
+
+    setResponseStatus(res: ServerResponse, code: number) {
+        res.statusCode = code;
+    }
+
+    endResponse(res: ServerResponse, chunk: string) {
+        return res.end(chunk);
+    }
+
+    monkeyPatchResMethodsForWebSocket(res: ServerResponse, wsContext: WebSocketContext) {
         debug('res.removeHeader');
         const resRemoveHeader = res.removeHeader;
         // @ts-ignore
@@ -165,9 +180,7 @@ export class ServeGrip extends ServeGripBase<IncomingMessage, ServerResponse> {
 
     }
 
-    monkeyPatchResMethodsForGripInstruct(apiResponse: IApiResponse<ServerResponse>, gripInstructGetter: () => GripInstruct | null) {
-
-        const res = apiResponse.getWrapped();
+    monkeyPatchResMethodsForGripInstruct(res: ServerResponse, gripInstructGetter: () => GripInstruct | null) {
 
         debug('res.writeHead');
         const resWriteHead = res.writeHead;

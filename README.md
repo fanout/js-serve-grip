@@ -18,6 +18,14 @@ This library also supports legacy services hosted by [Fanout](https://fanout.io/
 
 Authors: Katsuyuki Omuro <komuro@fastly.com>, Konstantin Bokarius <kon@fanout.io>
 
+## New for v2
+
+### Breaking changes
+
+- Simplified build, now exported as ESM modules only. If you require CommonJS support or
+  a browser build, use v1.
+- A number of classes and interfaces have been removed for simplification.
+
 ### Introduction
 
 [GRIP](https://pushpin.org/docs/protocols/grip/) is a protocol that enables a web service to
@@ -30,7 +38,7 @@ Next.js. It:
 * provides your route handler with tools to handle such requests, such as:
   * access to information about whether the current request is proxied or is signed
   * methods you can call to issue any instructions to the GRIP proxy
-* provides access to the the publisher object, enabling your application to publish messages through
+* provides access to the `Publisher` object, enabling your application to publish messages through
   the GRIP publisher.
 
 Additionally, `serve-grip` also handles
@@ -152,9 +160,17 @@ middleware in a shared location and reference it from your API routes.
 
 ### Configuration
 
-`@fanoutio/serve-grip` exports a constructor function, `ServeGrip`.  This constructor takes a
+`@fanoutio/serve-grip/node` exports a constructor function, `ServeGrip`.  This constructor takes a
 configuration object that can be used to configure the instance, such as the GRIP proxies to use
 for publishing or whether incoming requests should require a GRIP proxy.
+
+> [!IMPORTANT]  
+> `ServeGrip` is a subclass of `ServeGripBase` that works with `IncomingRequest` and `ServerResponse`
+> classes provided by Node.js. `ServeGrip` is also available on the main `@fanoutio/serve-grip` export
+> when the condition `"node"` is present when resolving imports (the default in Node.js applications).
+> 
+> This design allows non-Node.js platforms (such as [Expressly](https://expressly.edgecompute.app)) to
+> extend `ServeGripBase` without holding a dependency on types provided by Node.js.
 
 The following is an example of configuration against Pushpin running on localhost:
 ```javascript
@@ -316,3 +332,9 @@ If you have used `express-grip` in the past, you will notice that this library n
 requires the use of pre-route and post-route middlewares.  Consequently, you do not need to
 call `next()` for route handlers that complete their work.  In fact, you should follow the
 standard practice of calling `res.end()` at the end of each of your route handlers.
+
+## License
+
+(C) 2015, 2020 Fanout, Inc.  
+(C) 2024 Fastly, Inc.
+Licensed under the MIT License, see file LICENSE.md for details.
