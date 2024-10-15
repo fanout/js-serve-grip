@@ -42,10 +42,10 @@ export class ServeGrip extends ServeGripBase<IncomingMessage, ServerResponse> {
         };
     }
 
-    exec(platformRequest: IncomingMessage, platformResponse: ServerResponse, fn: NextFunction) {
+    exec(req: IncomingMessage, res: ServerResponse, fn: NextFunction) {
         debug('ServeGrip#exec - serveGrip invoked as Middleware function');
         let err: Error | undefined;
-        this.run(platformRequest, platformResponse)
+        this.run(req, res)
             .catch((ex) => (err = ex))
             .then((result) => {
                 if (err !== undefined) {
