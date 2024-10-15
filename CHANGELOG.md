@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+- Major update improving simplicity
+- Simplified build, now exported as ESM modules only.
+- Separated out Node.js support into its own export, `"@fanoutio/serve-grip/node"`.
+  - This exports a version of `ServeGrip` that works with Node.js's `IncomingMessage` objects.
+  - Added conditional export "node" that makes this available on the main `@fanoutio/serve-grip`
+    export as well when the condition `"node"` is present when resolving imports.
+- Removed `IGripApiRequest` and `IGripApiResponse` interfaces.
+  - Subclasses of `ServeGripBase` are now to work directly with the TRequest and TResponse objects.
 
 ## [1.3.1] - 2023-09-14
 - Bump dependency versions

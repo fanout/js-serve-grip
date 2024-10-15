@@ -18,6 +18,14 @@ This library also supports legacy services hosted by [Fanout](https://fanout.io/
 
 Authors: Katsuyuki Omuro <komuro@fastly.com>, Konstantin Bokarius <kon@fanout.io>
 
+## New for v2
+
+### Breaking changes
+
+- Simplified build, now exported as ESM modules only. If you require CommonJS support or
+  a browser build, use v1.
+- A number of classes and interfaces have been removed for simplification.
+
 ### Introduction
 
 [GRIP](https://pushpin.org/docs/protocols/grip/) is a protocol that enables a web service to
