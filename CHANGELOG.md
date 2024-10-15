@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+
+## [2.0.0] - 2024-10-14
+
 - Major update improving simplicity
 - Simplified build, now exported as ESM modules only.
 - Separated out Node.js support into its own export, `"@fanoutio/serve-grip/node"`.
@@ -58,3 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Unlike express-grip, no longer requires the use of pre- and post- middlewares.  A single
   middleware is able to provide the necessary headers and content after routes have run.
+
+[unreleased]: https://github.com/fanout/js-serve-grip/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/fanout/js-serve-grip/compare/v1.3.1...v2.0.0
+[1.3.1]: https://github.com/fanout/js-serve-grip/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/fanout/js-serve-grip/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/fanout/js-serve-grip/compare/v1.1.7...v1.2.0
+[1.1.7]: https://github.com/fanout/js-serve-grip/compare/v1.0.0...v1.1.7
+[1.0.0]: https://github.com/fanout/js-serve-grip/releases/tag/v1.0.0
