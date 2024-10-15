@@ -11,11 +11,9 @@ import {
     WebSocketContext,
     encodeWebSocketEvents,
     Channel,
-} from '@fanoutio/grip';
-import {
     isNodeReqWsOverHttp,
     getWebSocketContextFromNodeReq,
-} from '@fanoutio/grip/node';
+} from '@fanoutio/grip';
 
 import { type IRequestGrip } from '../IRequestGrip.js';
 import { type IResponseGrip } from '../IResponseGrip.js';
