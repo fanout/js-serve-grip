@@ -18,7 +18,7 @@ import {
 import { type IRequestGrip } from '../IRequestGrip.js';
 import { type IResponseGrip } from '../IResponseGrip.js';
 import { type IServeGripConfig } from '../IServeGripConfig.js';
-import { ServeGripBase } from '../ServeGripBase.js';
+import { type OnAfterSetupParams, ServeGripBase } from '../ServeGripBase.js';
 
 declare module 'node:http' {
     interface IncomingMessage {
@@ -92,6 +92,25 @@ export class ServeGrip extends ServeGripBase<IncomingMessage, ServerResponse> {
 
     endResponse(res: ServerResponse, chunk: string) {
         return res.end(chunk);
+    }
+
+    onAfterSetup(params: OnAfterSetupParams<IncomingMessage, ServerResponse>) {
+
+      // ## Monkey-patch res methods
+      const { res, wsContext, gripInstructGetter } = params;
+      if (wsContext != null) {
+        debug('Monkey-patch res methods for WS-over-HTTP - start');
+
+        this.monkeyPatchResMethodsForWebSocket(res, wsContext);
+
+        debug('Monkey-patch res methods for WS-over-HTTP - end');
+      } else {
+        debug('Monkey-patch res methods for GripInstruct - start');
+
+        this.monkeyPatchResMethodsForGripInstruct(res, gripInstructGetter);
+
+        debug('Monkey-patch res methods for GripInstruct - end');
+      }
     }
 
     monkeyPatchResMethodsForWebSocket(res: ServerResponse, wsContext: WebSocketContext) {

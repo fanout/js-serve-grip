@@ -17,8 +17,15 @@ import { IServeGripConfig } from './IServeGripConfig.js';
 import { GripInstructNotAvailableException } from './GripInstructNotAvailableException.js';
 import { GripInstructAlreadyStartedException } from './GripInstructAlreadyStartedException.js';
 
-import type {IRequestGrip} from "./IRequestGrip.js";
-import type {IResponseGrip} from "./IResponseGrip.js";
+import type { IRequestGrip } from "./IRequestGrip.js";
+import type { IResponseGrip } from "./IResponseGrip.js";
+
+export type OnAfterSetupParams<TRequest, TResponse> = {
+    req: TRequest;
+    res: TResponse;
+    wsContext: WebSocketContext | null;
+    gripInstructGetter: () => GripInstruct | null;
+};
 
 type NextFunction = (e?: Error) => void;
 
@@ -111,8 +118,7 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
     abstract setResponseStatus(res: TResponse, code: number): void;
     abstract endResponse(res: TResponse, chunk: string): TResponse;
 
-    abstract monkeyPatchResMethodsForWebSocket(res: TResponse, wsContext: WebSocketContext): void;
-    abstract monkeyPatchResMethodsForGripInstruct(res: TResponse, gripInstructGetter: () => GripInstruct | null): void;
+    abstract onAfterSetup(params: OnAfterSetupParams<TRequest, TResponse>): void;
 
     async run(req: TRequest, res: TResponse): Promise<boolean> {
 
@@ -252,22 +258,12 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
 
             debug('Set up res.grip - end');
 
-            // ## Monkey-patch res methods
-            if (wsContext != null) {
-                debug('Monkey-patch res methods for WS-over-HTTP - start');
-
-                this.monkeyPatchResMethodsForWebSocket(res, wsContext);
-
-                debug('Monkey-patch res methods for WS-over-HTTP - end');
-
-            } else {
-
-                debug('Monkey-patch res methods for GripInstruct - start');
-
-                this.monkeyPatchResMethodsForGripInstruct(res, () => gripInstruct);
-
-                debug('Monkey-patch res methods for GripInstruct - end');
-            }
+            this.onAfterSetup({
+                req,
+                res,
+                wsContext,
+                gripInstructGetter: () => gripInstruct,
+            });
 
         } catch (ex) {
             throw ex instanceof Error ? ex : new Error(String(ex));

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+- BREAKING: Add "after setup" hook to `ServeGripBase`
+
 ## [2.0.1] - 2025-01-06
 
 - Release to npmjs using CI workflow
