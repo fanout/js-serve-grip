@@ -1,0 +1,18 @@
+{
+  "name": "hono-ws",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Example for using serve-grip with WebSockets-over-HTTP in Hono on Node.js",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "author": "Katsuyuki Omuro <komuro@fastly.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@fanoutio/grip": "^4.3.1",
+    "@fanoutio/serve-grip": "file:../../",
+    "@hono/node-server": "^1.19.3",
+    "hono": "^4.9.8"
+  }
+}

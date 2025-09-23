@@ -1,0 +1,22 @@
+{
+  "name": "hono-compute-http",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Example for using serve-grip with HTTP formats in Hono on Fastly Compute",
+  "scripts": {
+    "build": "js-compute-runtime ./src/server.ts ./bin/main.wasm",
+    "dev": "fastly compute serve",
+    "deploy": "fastly compute publish"
+  },
+  "author": "Katsuyuki Omuro <komuro@fastly.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@fanoutio/serve-grip": "file:../../",
+    "@fastly/js-compute": "^3.34.0",
+    "hono": "^4.9.8"
+  },
+  "devDependencies": {
+    "@fastly/cli": "^12.0.0"
+  }
+}
