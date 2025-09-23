@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+## [3.0.0] - 2025-09-23
+
 - BREAKING: Add "after setup" hook to `ServeGripBase`
 - Add Hono support
 

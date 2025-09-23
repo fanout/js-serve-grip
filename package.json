@@ -1,6 +1,6 @@
 {
   "name": "@fanoutio/serve-grip",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "type": "module",
   "author": "Fastly <oss@fastly.com>",
   "description": "Connect-style Middleware for GRIP",
