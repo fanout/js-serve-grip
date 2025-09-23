@@ -30,6 +30,10 @@
     "./node": {
       "types": "./build/node/index.d.ts",
       "default": "./build/node/index.js"
+    },
+    "./hono": {
+      "types": "./build/hono/index.d.ts",
+      "default": "./build/hono/index.js"
     }
   },
   "files": [
@@ -69,6 +73,7 @@
     "@types/node": "^20",
     "c8": "^8.0.1",
     "glob": "^10.3.10",
+    "hono": "^4.9.8",
     "rimraf": "^3.0.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.2.2"
@@ -77,5 +82,13 @@
     "@fanoutio/grip": "^4.3.0",
     "callable-instance": "^2.0.0",
     "debug": "^4.3.4"
+  },
+  "peerDependencies": {
+    "hono": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "hono": {
+      "optional": true
+    }
   }
 }

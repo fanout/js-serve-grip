@@ -1,8 +1,8 @@
-import { CHANNEL_NAME, serveGrip } from '../../lib/grip';
+import { CHANNEL_NAME, serveGripMiddleware } from '../../lib/grip';
 
 export default async (req, res) => {
 
-    await serveGrip.run(req, res);
+    await serveGripMiddleware.run(req, res);
 
     const { method } = req;
     if (method === 'POST') {
@@ -10,7 +10,7 @@ export default async (req, res) => {
         const data = req.body;
 
         // Publish stream data to subscribers
-        const publisher = serveGrip.getPublisher();
+        const publisher = serveGripMiddleware.getPublisher();
         await publisher.publishHttpStream(CHANNEL_NAME, data + '\n');
 
         res.setHeader('Content-Type', 'text/plain');

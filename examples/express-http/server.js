@@ -7,13 +7,13 @@ const PUSHPIN_URL = 'http://localhost:5561/';
 
 const app = express();
 
-const serveGrip = new ServeGrip({
+const serveGripMiddleware = new ServeGrip({
     grip: {
         control_uri: PUSHPIN_URL,
     },
 });
 
-app.use(serveGrip);
+app.use(serveGripMiddleware);
 
 app.get('/api/stream', async function(req, res) {
 
@@ -39,7 +39,7 @@ app.post('/api/publish', express.text({ type: '*/*' }), async function(req, res,
 
     const data = req.body;
 
-    const publisher = serveGrip.getPublisher();
+    const publisher = serveGripMiddleware.getPublisher();
     await publisher.publishHttpStream(CHANNEL_NAME, data + '\n');
 
     res.setHeader('Content-Type', 'text/plain');

@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "types": [ "@fastly/js-compute" ],
+    "skipLibCheck": true,
+    "lib": ["es2022"],
+    "module": "es2022",
+    "moduleResolution": "bundler"
+  }
+}

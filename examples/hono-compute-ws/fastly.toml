@@ -1,0 +1,21 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+name = "hono-compute-ws"
+authors = [""]
+description = "Example for using serve-grip with WebSockets-over-HTTP in Hono running on Fastly Compute"
+language = "javascript"
+manifest_version = 3
+service_id = ""
+
+[local_server.pushpin]
+  enable = true
+
+[local_server.backends]
+  [local_server.backends.self]
+    url = "http://localhost:7676/"
+    override_host = "localhost:7676"
+
+[scripts]
+  build = "npm run build"
+  post_init = "npm install"

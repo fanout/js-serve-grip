@@ -8,13 +8,13 @@ const PUSHPIN_URL = 'http://localhost:5561/';
 
 const app = express();
 
-const serveGrip = new ServeGrip({
+const serveGripMiddleware = new ServeGrip({
     grip: {
         control_uri: PUSHPIN_URL,
     },
 });
 
-app.use(serveGrip);
+app.use(serveGripMiddleware);
 
 // Websocket-over-HTTP is translated to HTTP POST
 app.post('/api/websocket', async (req, res) => {
@@ -50,7 +50,7 @@ app.post('/api/websocket', async (req, res) => {
 
 app.post('/api/broadcast', express.text({ type: '*/*' }), async (req, res) => {
 
-    const publisher = serveGrip.getPublisher();
+    const publisher = serveGripMiddleware.getPublisher();
     await publisher.publishFormats(CHANNEL_NAME, new WebSocketMessageFormat(req.body));
 
     res.setHeader('Content-Type', 'text/plain');
