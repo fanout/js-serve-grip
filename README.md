@@ -1,12 +1,15 @@
 ## js-serve-grip
 
-GRIP library for Node.js, provided as `connect`-compatible middleware.
+GRIP library for JavaScript, provided as `express` and `hono` compatible middleware.
 
-Therefore, this library is usable with frameworks such as the following:
+This library is designed to assist the creation of backend server applications
+written in JavaScript that utilize [GRIP](https://pushpin.org/docs/protocols/grip/).
+This library is usable with the following frameworks:
 
-* [connect](https://github.com/senchalabs/Connect)
 * [Express](https://expressjs.com/)
+* [Hono](https://hono.dev/)
 * [Next.js](https://nextjs.org/)
+* [connect](https://github.com/senchalabs/Connect)
 * [Koa](https://koajs.org/) *experimental support
 
 Supported GRIP servers include:
@@ -14,17 +17,21 @@ Supported GRIP servers include:
 * [Pushpin](http://pushpin.org/)
 * [Fastly Fanout](https://docs.fastly.com/products/fanout)
 
-This library also supports legacy services hosted by [Fanout](https://fanout.io/) Cloud.
-
 Authors: Katsuyuki Omuro <komuro@fastly.com>, Konstantin Bokarius <kon@fanout.io>
 
-## New for v2
+## New for v3
 
 ### Breaking changes
 
-- Simplified build, now exported as ESM modules only. If you require CommonJS support or
-  a browser build, use v1.
-- A number of classes and interfaces have been removed for simplification.
+- `ServeGripBase` no longer declares `monkeyPatchResMethodsForWebSocket` and
+  `monkeyPatchResMethodsForGripInstruct` abstract methods. Instead,
+  at the end of the `run` method, the `onAfterSetup()` method is called.
+
+### Enhancements
+
+- Now adds support for [Hono](https://hono.dev/) framework.
+
+## Usage
 
 ### Introduction
 
@@ -32,7 +39,7 @@ Authors: Katsuyuki Omuro <komuro@fastly.com>, Konstantin Bokarius <kon@fanout.io
 delegate realtime push behavior to a proxy component, using HTTP and headers.
 
 `@fanoutio/serve-grip` is a server middleware that works with frameworks such as Express and
-Next.js. It:
+Hono. It:
 * gives a simple and straightforward way to configure these frameworks against your GRIP proxy
 * parses the `Grip-Sig` header in any requests to detect if they came through a Grip proxy
 * provides your route handler with tools to handle such requests, such as:
@@ -53,9 +60,10 @@ Install the library.
 npm install @fanoutio/serve-grip
 ```
 
-#### Installation in Connect / Express
+#### Installation in Express / Connect
 
-Import the `ServeGrip` class and instantiate the middleware. Then install it before your routes.
+Import the `ServeGrip` class from `@fanoutio/serve-grip/node` and instantiate the middleware. Then install it before
+your routes.
 
 Example:
 ```javascript
@@ -67,7 +75,7 @@ const app = express();
 const serveGripMiddleware = new ServeGrip(/* config */);
 app.use(serveGripMiddleware); 
 
-app.use( '/path', (res, req) => {
+app.use('/path', (res, req) => {
 
     if (req.grip.isProxied) {
         const gripInstruct = res.grip.startInstruct();
@@ -81,9 +89,57 @@ app.use( '/path', (res, req) => {
 app.listen(3000);
 ```
 
+#### Installation in Hono
+
+> [!NOTE]
+> It's strongly recommended to use [TypeScript](https://www.typescriptlang.org) when working with Hono.
+
+Import the `serveGrip` function from `@fanoutio/serve-grip/hono` instantiate the middleware. Then install it before
+your routes.
+
+Additionally, import the `Env` type and use it when instantiating `Hono`. This enables type
+checking for the `c.var.grip` context variable.
+
+Example:
+```typescript
+import { serve } from '@hono/node-server';
+import { Hono } from 'hono';
+import { serveGrip, type Env } from '@fanoutio/serve-grip/hono';
+
+const app = new Hono<Env>();
+
+const serveGripMiddleware = serveGrip(/* config */);
+app.use(serveGripMiddleware);
+
+app.use( '/path', async (c) => {
+
+    if (c.var.grip.isProxied) {
+        const gripInstruct = c.var.grip.startInstruct();
+        gripInstruct.addChannel(CHANNEL_NAME);
+        gripInstruct.setHoldStream();
+        return c.text('[stream open]\n');
+    }
+
+});
+
+serve({ fetch: app.fetch, port: 3000 }, (addr) => {
+    console.log(`Example app listening on port ${addr.port}!`)
+});
+```
+
+> [!NOTE]
+> The above example is for Hono running on Node.js. Hono can be used with
+> other server platforms as well. For details on adapting the application to
+> other platforms, see [Hono's guide](https://hono.dev/docs/getting-started/basic).
+>
+> For examples of using this library with Hono on a backend application running
+> on Fastly Compute, check out the following example applications:
+> - [hono-compute-http](./examples/hono-compute-http)
+> - [hono-compute-ws](./examples/hono-compute-ws)
+
 #### Installation in Koa (experimental)
 
-Import the `ServeGrip` class and instantiate it. The Koa middleware is available
+Import the `ServeGrip` class from `@fanoutio/serve-grip/node` and instantiate it. The Koa middleware is available
 as the `.koa` property on the object. Install it before your routes.
 
 Example:
@@ -121,8 +177,8 @@ app.listen(3000);
 You may use this library to add GRIP functionality to your
 [Next.js API Routes](https://nextjs.org/docs/api-routes/introduction).
 
-Import the `ServeGrip` class and instantiate the middleware, and then run it in your handler
-before your application logic by calling the async function `serveGripMiddleware.run()`.
+Import the `ServeGrip` class from `@fanoutio/serve-grip/node` and instantiate the middleware, and then run it in
+your handler before your application logic by calling the async function `serveGripMiddleware.run()`.
 
 Example:
 `/lib/grip.js`:
@@ -153,10 +209,11 @@ export default async(req, res) => {
 }
 ```
 
-Note: In Next.js, you must specifically call the middleware from each of your applicable API routes.
-This is because in Next.js, your API routes will typically run on a serverless platform, and objects
-will be recycled after each request. You are advised to construct a singleton instance of the
-middleware in a shared location and reference it from your API routes.  
+> [!NOTE]
+> In Next.js, you must specifically call the middleware from each of your applicable API routes.
+> This is because in Next.js, your API routes will typically run on a serverless platform, and objects
+> will be recycled after each request. You are advised to construct a singleton instance of the
+> middleware in a shared location and reference it from your API routes.  
 
 ### Configuration
 
@@ -164,15 +221,8 @@ middleware in a shared location and reference it from your API routes.
 configuration object that can be used to configure the instance, such as the GRIP proxies to use
 for publishing or whether incoming requests should require a GRIP proxy.
 
-> [!IMPORTANT]  
-> `ServeGrip` is a subclass of `ServeGripBase` that works with `IncomingRequest` and `ServerResponse`
-> classes provided by Node.js. `ServeGrip` is also available on the main `@fanoutio/serve-grip` export
-> when the condition `"node"` is present when resolving imports (the default in Node.js applications).
-> 
-> This design allows non-Node.js platforms (such as [Expressly](https://expressly.edgecompute.app)) to
-> extend `ServeGripBase` without holding a dependency on types provided by Node.js.
-
-The following is an example of configuration against Pushpin running on localhost:
+The following is an example of configuration when the GRIP proxy is an instance of
+Pushpin running on localhost:
 ```javascript
 import { ServeGrip } from '@fanoutio/serve-grip/node';
 const serveGripMiddleware = new ServeGrip({
@@ -185,7 +235,7 @@ const serveGripMiddleware = new ServeGrip({
 });
 ```
 
-The following is an example of configuration against Fastly Fanout:
+The following is an example of configuration when the GRIP proxy is Fastly Fanout:
 ```javascript
 import { ServeGrip } from '@fanoutio/serve-grip/node';
 const serveGripMiddleware = new ServeGrip({
@@ -215,6 +265,21 @@ const serveGripMiddleware = new ServeGrip({
     isGripProxyRequired: true,
 });
 ```
+
+> [!NOTE]
+> When used with Hono, `@fanoutio/serve-grip/hono` exports a function named `serveGrip` rather than a constructor.
+> This function takes the same parameters as the `ServeGrip` constructor described above.
+> 
+> Example:
+> ```typescript
+> import { serveGrip } from '@fanoutio/serve-grip/hono';
+> 
+> const serveGripMiddleware = serveGrip({
+>   grip: process.env.GRIP_URL,
+>   gripVerifyKey: process.env.GRIP_VERIFY_KEY,
+>   isGripProxyRequired: true,
+> });
+> ```
 
 Available options:
 
@@ -261,7 +326,9 @@ extended with `grip` properties.  These provide access to the following:
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `res.grip.startInstruct()` | Returns an instance of `GripInstruct`, which can be used to issue instructions to the GRIP proxy to hold connections. See `@fanoutio/grip` for details on `GripInstruct`. |
 
-To publish messages, call `serveGrip.getPublisher()` to obtain a
+> [!NOTE]
+> When used with Hono, `grip` is available via `c.var.grip`, and contains all the properties of both `req.grip` and `res.grip`.
+
 To publish messages, call `serveGripMiddleware.getPublisher()` to obtain a
 `Publisher`. Use it to publish messages using the endpoints and 
 prefix specified to the `ServeGrip` constructor.
@@ -278,64 +345,29 @@ read the `README.md` files in the corresponding directories.
 
 ### Advanced
 
-#### Next.js alternative invocation
+#### Fastly Compute
 
-As an alternative method of running `serveGrip` in a Next.js API route, since `serveGrip` is
-`connect`-compatible, you may use the process described in
-[API Middlewares](https://nextjs.org/docs/api-routes/api-middlewares#connectexpress-middleware-support).
-This may be useful for example if you have multiple middlewares and you wish to call them in a
-uniform manner.
+[Fastly Compute](https://www.fastly.com/documentation/guides/compute/getting-started-with-compute/) is an advanced edge
+computing platform offered by [Fastly](https://www.fastly.com) that runs code in your favorite language (compiled to
+WebAssembly) on its global edge network.
 
-Example:
-`/lib/grip.js`:
-```javascript
-import { ServeGrip } from '@fanoutio/serve-grip';
-export const serveGrip = new ServeGrip(/* config */);
+When using Fastly Compute, it is possible to use a single application both to issue GRIP instructions and to invoke the
+GRIP proxy, by specifying the application itself as the _backend_.
 
-// Helper method to wait for a middleware to execute before continuing
-// And to throw an error when an error happens in a middleware
-// https://nextjs.org/docs/api-routes/api-middlewares#connectexpress-middleware-support
-export function runMiddleware(req, res, fn) {
-    return new Promise((resolve, reject) => {
-        fn(req, res, (result) => {
-            if (result instanceof Error) {
-                return reject(result)
-            }
+> [!HINT]
+> The Fastly Compute examples in this repository are configured to illustrate this setup with
+> [Fastly Fanout local testing](https://www.fastly.com/documentation/guides/concepts/real-time-messaging/fanout/#run-the-service-locally):
+> 
+> - [hono-compute-http](./examples/hono-compute-http)
+> - [hono-compute-ws](./examples/hono-compute-ws)
 
-            return resolve(result)
-        })
-    })
-}
-```
-
-`/pages/api/path.js`:
-```javascript
-import { serveGrip, runMiddleware } from '/lib/grip';
-
-export default async(req, res) => {
-
-    // Run the middleware
-    await runMiddleware(req, res, serveGrip);
-
-    if (req.grip.isProxied) {
-        const gripInstruct = res.grip.startInstruct();
-        gripInstruct.addChannel('test');
-        gripInstruct.setHoldStream();
-        res.end('[stream open]\n');
-    }
-
-}
-```
-
-#### Changes from `express-grip`
-
-If you have used `express-grip` in the past, you will notice that this library no longer
-requires the use of pre-route and post-route middlewares.  Consequently, you do not need to
-call `next()` for route handlers that complete their work.  In fact, you should follow the
-standard practice of calling `res.end()` at the end of each of your route handlers.
+When deploying these projects to your Fastly account, you will need to enable Fastly Fanout on
+your service, as well as set up the backend on your service to point to itself.
+See [deploy to a Fastly Service](https://www.fastly.com/documentation/guides/concepts/real-time-messaging/fanout/#deploy-to-a-fastly-service)
+in the Fastly documentation for details.
 
 ## License
 
 (C) 2015, 2020 Fanout, Inc.  
-(C) 2024 Fastly, Inc.
+(C) 2025 Fastly, Inc.
 Licensed under the MIT License, see file LICENSE.md for details.
