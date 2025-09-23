@@ -9,13 +9,13 @@ const PUSHPIN_URL = 'http://localhost:5561/';
 
 const app = new Koa();
 
-const serveGrip = new ServeGrip({
+const serveGripMiddleware = new ServeGrip({
     grip: {
         control_uri: PUSHPIN_URL,
     },
 });
 
-app.use(serveGrip.koa);
+app.use(serveGripMiddleware.koa);
 
 const router = new Router();
 
@@ -43,7 +43,7 @@ router.post('/api/publish', KoaBody(), async ctx => {
 
     const data = ctx.request.body;
 
-    const publisher = serveGrip.getPublisher();
+    const publisher = serveGripMiddleware.getPublisher();
     await publisher.publishHttpStream(CHANNEL_NAME, data + '\n');
 
     ctx.set('Content-Type', 'text/plain');

@@ -60,12 +60,12 @@ Import the `ServeGrip` class and instantiate the middleware. Then install it bef
 Example:
 ```javascript
 import express from 'express';
-import { ServeGrip } from '@fanoutio/serve-grip';
+import { ServeGrip } from '@fanoutio/serve-grip/node';
 
 const app = express();
 
-const serveGrip = new ServeGrip(/* config */);
-app.use( serveGrip ); 
+const serveGripMiddleware = new ServeGrip(/* config */);
+app.use(serveGripMiddleware); 
 
 app.use( '/path', (res, req) => {
 
@@ -90,12 +90,12 @@ Example:
 ```javascript
 import Koa from 'koa';
 import Router from '@koa/router';
-import { ServeGrip } from '@fanoutio/serve-grip';
+import { ServeGrip } from '@fanoutio/serve-grip/node';
 
 const app = new Koa();
 
-const serveGrip = new ServeGrip(/* config */);
-app.use( serveGrip.koa );
+const serveGripMiddleware = new ServeGrip(/* config */);
+app.use(serveGripMiddleware.koa);
 
 const router = new Router();
 
@@ -122,23 +122,23 @@ You may use this library to add GRIP functionality to your
 [Next.js API Routes](https://nextjs.org/docs/api-routes/introduction).
 
 Import the `ServeGrip` class and instantiate the middleware, and then run it in your handler
-before your application logic by calling the async function `serveGrip.run()`.
+before your application logic by calling the async function `serveGripMiddleware.run()`.
 
 Example:
 `/lib/grip.js`:
 ```javascript
-import { ServeGrip } from '@fanoutio/serve-grip';
-export const serveGrip = new ServeGrip(/* config */);
+import { ServeGrip } from '@fanoutio/serve-grip/node';
+export const serveGripMiddleware = new ServeGrip(/* config */);
 ```
 
 `/pages/api/path.js`:
 ```javascript
-import { serveGrip } from '/lib/grip';
+import { serveGripMiddleware } from '/lib/grip';
 
 export default async(req, res) => {
     // Run the middleware
-    if (!(await serveGrip.run(req, res))) {
-        // If serveGrip.run() has returned false, it means the middleware has already
+    if (!(await serveGripMiddleware.run(req, res))) {
+        // If serveGripMiddleware.run() has returned false, it means the middleware has already
         // sent and ended the response, usually due to an error.  
         return;
     }
@@ -160,7 +160,7 @@ middleware in a shared location and reference it from your API routes.
 
 ### Configuration
 
-`@fanoutio/serve-grip/node` exports a constructor function, `ServeGrip`.  This constructor takes a
+`@fanoutio/serve-grip/node` exports a class constructor named `ServeGrip`.  This constructor takes a
 configuration object that can be used to configure the instance, such as the GRIP proxies to use
 for publishing or whether incoming requests should require a GRIP proxy.
 
@@ -174,8 +174,8 @@ for publishing or whether incoming requests should require a GRIP proxy.
 
 The following is an example of configuration against Pushpin running on localhost:
 ```javascript
-import { ServeGrip } from '@fanoutio/serve-grip';
-const serveGrip = new ServeGrip({
+import { ServeGrip } from '@fanoutio/serve-grip/node';
+const serveGripMiddleware = new ServeGrip({
     grip: {
         control_uri: 'https://localhost:5561/',   // Control URI for Pushpin publisher
         control_iss: '<issuer>',                  // (opt.) iss needed for publishing, if required by Pushpin
@@ -187,8 +187,8 @@ const serveGrip = new ServeGrip({
 
 The following is an example of configuration against Fastly Fanout:
 ```javascript
-import { ServeGrip } from '@fanoutio/serve-grip';
-const serveGrip = new ServeGrip({
+import { ServeGrip } from '@fanoutio/serve-grip/node';
+const serveGripMiddleware = new ServeGrip({
     grip: {
         control_uri: 'https://api.fastly.com/service/<service-id>/',   // Control URI
         key: '<fastly-api-token>',             // Authorization key for publishing (Fastly API Token)
@@ -207,9 +207,9 @@ GRIP_VERIFY_KEY="base64:LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemow
 ```
 
 ```javascript
-import { ServeGrip } from '@fanoutio/serve-grip';
+import { ServeGrip } from '@fanoutio/serve-grip/node';
 
-const serveGrip = new ServeGrip({
+const serveGripMiddleware = new ServeGrip({
     grip: process.env.GRIP_URL,
     gripVerifyKey: process.env.GRIP_VERIFY_KEY,
     isGripProxyRequired: true,
@@ -262,12 +262,13 @@ extended with `grip` properties.  These provide access to the following:
 | `res.grip.startInstruct()` | Returns an instance of `GripInstruct`, which can be used to issue instructions to the GRIP proxy to hold connections. See `@fanoutio/grip` for details on `GripInstruct`. |
 
 To publish messages, call `serveGrip.getPublisher()` to obtain a
+To publish messages, call `serveGripMiddleware.getPublisher()` to obtain a
 `Publisher`. Use it to publish messages using the endpoints and 
 prefix specified to the `ServeGrip` constructor.
 
-| Key                        | Description                                                                                                                                                                                |
-|----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `serveGrip.getPublisher()` | Returns an instance of `Publisher`, which can be used to publish messages to the provided publishing endpoints using the provided prefix. See `@fanoutio/grip` for details on `Publisher`. |
+| Key                                  | Description                                                                                                                                                                                |
+|--------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `serveGripMiddleware.getPublisher()` | Returns an instance of `Publisher`, which can be used to publish messages to the provided publishing endpoints using the provided prefix. See `@fanoutio/grip` for details on `Publisher`. |
 
 ### Examples
 

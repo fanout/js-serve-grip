@@ -1,8 +1,8 @@
-import { CHANNEL_NAME, serveGrip } from '../../lib/grip';
+import { CHANNEL_NAME, serveGripMiddleware } from '../../lib/grip';
 
 export default async (req, res) => {
 
-    if (!(await serveGrip.run(req, res))) {
+    if (!(await serveGripMiddleware.run(req, res))) {
         return;
     }
 
