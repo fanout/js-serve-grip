@@ -15,10 +15,12 @@ import type { IRequestGrip } from '../IRequestGrip.js';
 import type { IServeGripConfig } from '../IServeGripConfig.js';
 import { type OnAfterSetupParams, ServeGripBase } from '../ServeGripBase.js';
 
+export type Variables = {
+    grip: IRequestGrip & IResponseGrip,
+};
+
 export type Env = {
-    Variables: {
-        grip: IRequestGrip & IResponseGrip,
-    }
+    Variables: Variables,
 };
 
 type RequestState = {
