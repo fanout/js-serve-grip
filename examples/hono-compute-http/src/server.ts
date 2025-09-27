@@ -20,7 +20,7 @@ app.use(serveGripMiddleware);
 
 app.get('/api/*', createMiddleware(async (c, next) => {
     if (!c.var.grip.isProxied) {
-        c.res = null;
+        c.res = undefined;
         c.res = createFanoutHandoff(c.req.raw, 'self');
         return;
     }
