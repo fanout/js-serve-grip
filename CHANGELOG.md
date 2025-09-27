@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+- Use c.res = undefined in examples
+- Export Variables type
+
 ## [3.0.0] - 2025-09-23
 
 - BREAKING: Add "after setup" hook to `ServeGripBase`
