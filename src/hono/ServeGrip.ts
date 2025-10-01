@@ -1,4 +1,4 @@
-import { type HonoRequest } from 'hono';
+import { type HonoRequest, type Context, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory'
 import {
     type WebSocketContext,
@@ -7,6 +7,7 @@ import {
     getWebSocketContextFromReq,
     isWsOverHttp,
     encodeWebSocketEvents,
+    type Publisher,
 } from '@fanoutio/grip';
 
 import debug from '../debug.js';
@@ -15,8 +16,16 @@ import type { IRequestGrip } from '../IRequestGrip.js';
 import type { IServeGripConfig } from '../IServeGripConfig.js';
 import { type OnAfterSetupParams, ServeGripBase } from '../ServeGripBase.js';
 
+export type GripContext =
+    & IRequestGrip
+    & IResponseGrip
+    & {
+        getPublisher: () => Publisher,
+    }
+;
+
 export type Variables = {
-    grip: IRequestGrip & IResponseGrip,
+    grip: GripContext,
 };
 
 export type Env = {
@@ -78,16 +87,19 @@ class ServeGrip extends ServeGripBase<RequestState, ResponseState> {
     }
 }
 
-export type ServeGripMiddleware = ReturnType<typeof createMiddleware<Env>> &
-    {
-        getPublisher: ServeGrip['getPublisher'],
-    };
+export type ServeGripParams =
+    | IServeGripConfig
+    | ((c: Context) => IServeGripConfig)
+;
 
-export function serveGrip(config?: IServeGripConfig): ServeGripMiddleware {
+export function serveGrip(config: ServeGripParams): MiddlewareHandler<Env> {
 
-    const serveGripInstance = new ServeGrip(config);
+    const configBuilder = typeof config === 'function' ? config : () => config;
 
-    const serveGripMiddleware = createMiddleware<Env>(async (c, next) => {
+    return createMiddleware<Env>(async (c, next) => {
+
+        const configValue = configBuilder(c);
+        const serveGripInstance = new ServeGrip(configValue);
 
         const requestState: RequestState = {
             request: c.req,
@@ -102,7 +114,7 @@ export function serveGrip(config?: IServeGripConfig): ServeGripMiddleware {
         };
 
         const result = await serveGripInstance.run(requestState, responseState);
-        if (!result) {
+        if (!result || requestState.grip == null || responseState.grip == null) {
             // serveGripInstance.run returns false if there was an error.
             c.res = new Response(
                 responseState.endChunk ?? 'Error in serveGrip middleware.',
@@ -113,7 +125,14 @@ export function serveGrip(config?: IServeGripConfig): ServeGripMiddleware {
             return;
         }
 
-        const grip = Object.assign({}, requestState.grip, responseState.grip);
+        const grip = Object.assign(
+            {},
+            requestState.grip,
+            responseState.grip,
+            {
+                getPublisher: serveGripInstance.getPublisher.bind(serveGripInstance),
+            },
+        );
         c.set('grip', grip);
 
         await next();
@@ -162,16 +181,5 @@ export function serveGrip(config?: IServeGripConfig): ServeGripMiddleware {
         }
 
     });
-
-    return Object.assign(
-        serveGripMiddleware,
-        {
-            getPublisher() {
-
-                return serveGripInstance.getPublisher();
-
-            },
-        }
-    );
 }
 
