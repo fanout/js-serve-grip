@@ -1,32 +1,26 @@
-import { createFanoutHandoff } from 'fastly:fanout';
+import { ConfigStore } from 'fastly:config-store';
 import { Hono } from 'hono';
-import { createMiddleware } from 'hono/factory';
 import { fire } from 'hono/service-worker'
 
-import { WebSocketMessageFormat } from "@fanoutio/grip";
-import { serveGrip, type Env } from '@fanoutio/serve-grip/hono';
+import { WebSocketMessageFormat } from '@fanoutio/grip';
+import { serveGrip, fanoutSelfHandoffMiddleware, type Variables } from '@fanoutio/serve-grip/hono';
 
+type Env = {
+    Variables: Variables,
+};
 const app = new Hono<Env>();
 
 const CHANNEL_NAME = 'test';
-const PUSHPIN_URL = 'http://localhost:5561/';
 
-const serveGripMiddleware = serveGrip({
-    grip: {
-        control_uri: PUSHPIN_URL,
-    },
+const serveGripMiddleware = serveGrip(() => {
+    return {
+        grip: new ConfigStore('grip').get('GRIP_URL') ?? 'http://localhost:5561/',
+    };
 });
 
 app.use(serveGripMiddleware);
 
-app.get('/api/*', createMiddleware(async (c, next) => {
-    if (!c.var.grip.isProxied) {
-        c.res = undefined;
-        c.res = createFanoutHandoff(c.req.raw, 'self');
-        return;
-    }
-    await next();
-}));
+app.get('/api/*', fanoutSelfHandoffMiddleware());
 
 // Websocket-over-HTTP is translated to HTTP POST
 app.post('/api/websocket', async (c) => {
@@ -67,7 +61,7 @@ app.post('/api/broadcast', async (c) => {
 
     const data = await c.req.text();
 
-    const publisher = serveGripMiddleware.getPublisher();
+    const publisher = c.var.grip.getPublisher();
     await publisher.publishFormats(CHANNEL_NAME, new WebSocketMessageFormat(data));
 
     return c.text('Ok\n');

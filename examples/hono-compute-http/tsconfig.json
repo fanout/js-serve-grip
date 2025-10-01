@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "customConditions": [ "fastly" ],
     "types": [ "@fastly/js-compute" ],
     "skipLibCheck": true,
     "lib": ["es2022"],

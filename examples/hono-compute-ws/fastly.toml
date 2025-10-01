@@ -16,6 +16,12 @@ service_id = ""
     url = "http://localhost:7676/"
     override_host = "localhost:7676"
 
+[local_server.config_stores]
+  [local_server.config_stores.grip]
+    format = "inline-toml"
+  [local_server.config_stores.grip.contents]
+    GRIP_URL = "http://localhost:5561/"
+
 [scripts]
   build = "npm run build"
   post_init = "npm install"
