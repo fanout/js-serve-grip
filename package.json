@@ -32,8 +32,18 @@
       "default": "./build/node/index.js"
     },
     "./hono": {
-      "types": "./build/hono/index.d.ts",
-      "default": "./build/hono/index.js"
+      "fastly": {
+        "types": "./build/hono/index-fastly.d.ts",
+        "default": "./build/hono/index-fastly.js"
+      },
+      "default": {
+        "types": "./build/hono/index.d.ts",
+        "default": "./build/hono/index.js"
+      }
+    },
+    "./hono/fastly": {
+      "types": "./build/hono/fastly/index.d.ts",
+      "default": "./build/hono/fastly/index.js"
     }
   },
   "files": [
@@ -69,6 +79,7 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "@fastly/js-compute": "^3.0.0",
     "@types/debug": "^4.1.5",
     "@types/node": "^20",
     "c8": "^8.0.1",
@@ -84,9 +95,13 @@
     "debug": "^4.3.4"
   },
   "peerDependencies": {
+    "@fastly/js-compute": "^3.0.0",
     "hono": "^4.0.0"
   },
   "peerDependenciesMeta": {
+    "@fastly/js-compute": {
+      "optional": true
+    },
     "hono": {
       "optional": true
     }
