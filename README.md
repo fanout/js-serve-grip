@@ -97,6 +97,9 @@ app.listen(3000);
 Import the `serveGrip` function from `@fanoutio/serve-grip/hono` instantiate the middleware. Then install it before
 your routes.
 
+Specifying the configuration object for `serveGrip` can be done in a callback. This is useful for environments such
+as Fastly Compute, where configuration may not be available until request processing.  
+
 Additionally, import the `Env` type and use it when instantiating `Hono`. This enables type
 checking for the `c.var.grip` context variable.
 
@@ -108,7 +111,7 @@ import { serveGrip, type Env } from '@fanoutio/serve-grip/hono';
 
 const app = new Hono<Env>();
 
-const serveGripMiddleware = serveGrip(/* config */);
+const serveGripMiddleware = serveGrip(() => /* config */);
 app.use(serveGripMiddleware);
 
 app.use( '/path', async (c) => {
@@ -268,17 +271,19 @@ const serveGripMiddleware = new ServeGrip({
 
 > [!NOTE]
 > When used with Hono, `@fanoutio/serve-grip/hono` exports a function named `serveGrip` rather than a constructor.
-> This function takes the same parameters as the `ServeGrip` constructor described above.
+> This function takes the same parameters as the `ServeGrip` constructor described above, or as a callback that
+> returns such an object. This is useful for environments such
+as Fastly Compute, where configuration may not be available until request processing.
 > 
 > Example:
 > ```typescript
 > import { serveGrip } from '@fanoutio/serve-grip/hono';
 > 
-> const serveGripMiddleware = serveGrip({
+> const serveGripMiddleware = serveGrip(() => ({
 >   grip: process.env.GRIP_URL,
 >   gripVerifyKey: process.env.GRIP_VERIFY_KEY,
 >   isGripProxyRequired: true,
-> });
+> }));
 > ```
 
 Available options:
@@ -337,6 +342,9 @@ prefix specified to the `ServeGrip` constructor.
 |--------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `serveGripMiddleware.getPublisher()` | Returns an instance of `Publisher`, which can be used to publish messages to the provided publishing endpoints using the provided prefix. See `@fanoutio/grip` for details on `Publisher`. |
 
+> [!NOTE]
+> When used with Hono, `getPublisher` is available via `c.var.grip.getPublisher` instead of on the `serveGripMiddleware` instance.
+
 ### Examples
 
 This repository contains examples to illustrate the use of `serve-grip` in Connect / Express
@@ -347,24 +355,42 @@ read the `README.md` files in the corresponding directories.
 
 #### Fastly Compute
 
-[Fastly Compute](https://www.fastly.com/documentation/guides/compute/getting-started-with-compute/) is an advanced edge
-computing platform offered by [Fastly](https://www.fastly.com) that runs code in your favorite language (compiled to
-WebAssembly) on its global edge network.
+[Fastly Compute](https://www.fastly.com/documentation/guides/compute/getting-started-with-compute/) is an advanced
+edge computing platform that runs code (compiled to WebAssembly) on Fastly's global edge network.
 
-When using Fastly Compute, it is possible to use a single application both to issue GRIP instructions and to invoke the
-GRIP proxy, by specifying the application itself as the _backend_.
+When using Fastly Compute, a single application can both **initiate a GRIP handoff** and **process proxied GRIP
+requests** by configuring the application itself as the backend. In this setup, the app runs *twice* per request:
+- once as the **outer Compute app**, which activates the GRIP proxy, and
+- once again as the **inner proxied app**, invoked through the GRIP proxy.
 
-> [!HINT]
-> The Fastly Compute examples in this repository are configured to illustrate this setup with
+To support this pattern, `@fanoutio/serve-grip/hono` provides an additional Hono middleware,
+**`fanoutSelfHandoffMiddleware`**, which is included automatically when running under the Fastly Compute JavaScript
+SDK (via the [`fastly` conditional runtime key](https://runtime-keys.proposal.wintercg.org/#fastly)).
+
+```ts
+import { fanoutSelfHandoffMiddleware } from '@fanoutio/serve-grip/hono';
+
+app.get('/api/*', fanoutSelfHandoffMiddleware('self'));
+```
+
+This middleware inspects whether the app is running in the outer Compute context or the inner proxied context:
+- In the **outer** context, it performs a Fanout handoff back to `'self'`, which must be defined as a backend in your
+   Fastly service that points to itself.
+- In the **inner** context, it allows the request to continue as usual.
+
+> [!NOTE]
+> The examples in this repository demonstrate this configuration with
 > [Fastly Fanout local testing](https://www.fastly.com/documentation/guides/concepts/real-time-messaging/fanout/#run-the-service-locally):
-> 
 > - [hono-compute-http](./examples/hono-compute-http)
 > - [hono-compute-ws](./examples/hono-compute-ws)
 
-When deploying these projects to your Fastly account, you will need to enable Fastly Fanout on
-your service, as well as set up the backend on your service to point to itself.
-See [deploy to a Fastly Service](https://www.fastly.com/documentation/guides/concepts/real-time-messaging/fanout/#deploy-to-a-fastly-service)
-in the Fastly documentation for details.
+When deploying to your Fastly account, ensure that:
+1. **Fanout is enabled** on your service, and
+2. A **backend pointing to itself** is configured.
+
+For more details, see
+[Deploy to a Fastly Service](https://www.fastly.com/documentation/guides/concepts/real-time-messaging/fanout/#deploy-to-a-fastly-service)
+in the Fastly documentation.
 
 ## License
 
