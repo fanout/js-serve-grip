@@ -68,4 +68,4 @@ app.post('/api/broadcast', async (c) => {
 
 });
 
-fire(app as unknown as Hono);
+fire(app);

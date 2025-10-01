@@ -50,4 +50,4 @@ app.post('/api/publish', async (c) => {
 
 });
 
-fire(app as unknown as Hono);
+fire(app);
