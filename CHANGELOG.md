@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
-- Use c.res = undefined in examples
+- BREAKING: Restructure hono middleware for lazy config
+- Add fanoutSelfHandoffMiddleware in fastly export
 - Export Variables type
 
 ## [3.0.0] - 2025-09-23
