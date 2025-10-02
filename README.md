@@ -271,19 +271,21 @@ const serveGripMiddleware = new ServeGrip({
 
 > [!NOTE]
 > When used with Hono, `@fanoutio/serve-grip/hono` exports a function named `serveGrip` rather than a constructor.
-> This function takes the same parameters as the `ServeGrip` constructor described above, or as a callback that
-> returns such an object. This is useful for environments such
-as Fastly Compute, where configuration may not be available until request processing.
+> This function takes the same object as the parameter to the `ServeGrip` constructor described above, or a promise that
+> resolves to such an object. It can also be called with a callback that returns such an object or promise.
+> This is useful for environments such as Fastly Compute, where runtime configuration may not be available until
+> request processing.
 > 
 > Example:
 > ```typescript
 > import { serveGrip } from '@fanoutio/serve-grip/hono';
 > 
-> const serveGripMiddleware = serveGrip(() => ({
->   grip: process.env.GRIP_URL,
->   gripVerifyKey: process.env.GRIP_VERIFY_KEY,
->   isGripProxyRequired: true,
-> }));
+> const serveGripMiddleware = serveGrip(async () => {
+>     const gripUrl = await loadGripUrl();
+>     return {
+>         grip: gripUrl,
+>     };
+> });
 > ```
 
 Available options:
@@ -318,32 +320,21 @@ The `grip` parameter may be provided as any of the following:
 
 ### Handling a route
 
-After the middleware has run, your handler will receive `req` and `res` objects that have been
-extended with `grip` properties.  These provide access to the following:
+After the middleware has run, your handler will receive the Grip context `grip` (On `req` and `res` objects or on the Hono
+context `c`). These provide access to the following:
 
-| Key                  | Description                                                                                                                                                                         |
-|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `req.grip.isProxied` | A boolean value indicating whether the current request has been called via a GRIP proxy.                                                                                            |
-| `req.grip.isSigned`  | A boolean value indicating whether the current request is a signed request called via a GRIP proxy.                                                                                 |
-| `req.grip.wsContext` | If the current request has been made through WebSocket-Over-HTTP, then a `WebSocketContext` object for the current request. See `@fanoutio/grip` for details on `WebSocketContext`. |
+| Express, Koa, etc.         | Hono                         | Description                                                                                                                                                                         |
+|----------------------------|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `req.grip.isProxied`       | `c.var.grip.isProxied`       | A boolean value indicating whether the current request has been called via a GRIP proxy.                                                                                            |
+| `req.grip.isSigned`        | `c.var.grip.isSigned`        | A boolean value indicating whether the current request is a signed request called via a GRIP proxy.                                                                                 |
+| `req.grip.wsContext`       | `c.var.grip.wsContext`       | If the current request has been made through WebSocket-Over-HTTP, then a `WebSocketContext` object for the current request. See `@fanoutio/grip` for details on `WebSocketContext`. |
+| `res.grip.startInstruct()` | `c.var.grip.startInstruct()` | Returns an instance of `GripInstruct`, which can be used to issue instructions to the GRIP proxy to hold connections. See `@fanoutio/grip` for details on `GripInstruct`.           |
 
-| Key                        | Description                                                                                                                                                               |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `res.grip.startInstruct()` | Returns an instance of `GripInstruct`, which can be used to issue instructions to the GRIP proxy to hold connections. See `@fanoutio/grip` for details on `GripInstruct`. |
+To publish messages, obtain a `Publisher`. Use it to publish messages using the endpoints and prefix specified when the middleware was initialized.
 
-> [!NOTE]
-> When used with Hono, `grip` is available via `c.var.grip`, and contains all the properties of both `req.grip` and `res.grip`.
-
-To publish messages, call `serveGripMiddleware.getPublisher()` to obtain a
-`Publisher`. Use it to publish messages using the endpoints and 
-prefix specified to the `ServeGrip` constructor.
-
-| Key                                  | Description                                                                                                                                                                                |
-|--------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `serveGripMiddleware.getPublisher()` | Returns an instance of `Publisher`, which can be used to publish messages to the provided publishing endpoints using the provided prefix. See `@fanoutio/grip` for details on `Publisher`. |
-
-> [!NOTE]
-> When used with Hono, `getPublisher` is available via `c.var.grip.getPublisher` instead of on the `serveGripMiddleware` instance.
+| Express, Koa, etc.                   | Hono                        | Description                                                                                                                                                                                |
+|--------------------------------------|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `serveGripMiddleware.getPublisher()` | `c.var.grip.getPublisher()` | Returns an instance of `Publisher`, which can be used to publish messages to the provided publishing endpoints using the provided prefix. See `@fanoutio/grip` for details on `Publisher`. |
 
 ### Examples
 

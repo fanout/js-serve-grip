@@ -39,7 +39,7 @@ app.post('/api/publish', async (c) => {
 
     const data = await c.req.text();
 
-    const publisher = serveGripMiddleware.getPublisher();
+    const publisher = c.var.grip.getPublisher();
     await publisher.publishHttpStream(CHANNEL_NAME, data + '\n');
 
     return c.text('Ok\n');

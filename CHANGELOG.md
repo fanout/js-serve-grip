@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+- Update Hono examples for 4.1.0
+- Update README for Hono
+
 ## [4.1.0] - 2025-10-02
 
 - Allow Hono middleware config param to be typed
