@@ -1,4 +1,4 @@
-import { type HonoRequest, type Context, type MiddlewareHandler } from 'hono';
+import { type Env as HonoEnv, type HonoRequest, type Context, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory'
 import {
     type WebSocketContext,
@@ -87,18 +87,18 @@ class ServeGrip extends ServeGripBase<RequestState, ResponseState> {
     }
 }
 
-export type ServeGripParams =
-    | IServeGripConfig
-    | ((c: Context) => IServeGripConfig)
+export type ServeGripParams<E extends HonoEnv> =
+    | (Promise<IServeGripConfig> | IServeGripConfig)
+    | ((c: Context<E>) => (Promise<IServeGripConfig> | IServeGripConfig))
 ;
 
-export function serveGrip(config: ServeGripParams): MiddlewareHandler<Env> {
+export function serveGrip<E extends Env>(config: ServeGripParams<E>): MiddlewareHandler<E> {
 
     const configBuilder = typeof config === 'function' ? config : () => config;
 
-    return createMiddleware<Env>(async (c, next) => {
+    return createMiddleware<E>(async (c, next) => {
 
-        const configValue = configBuilder(c);
+        const configValue = await configBuilder(c);
         const serveGripInstance = new ServeGrip(configValue);
 
         const requestState: RequestState = {

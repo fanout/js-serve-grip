@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+- Allow Hono middleware config param to be typed
+- Allow Hono middleware config param to be async
+
 ## [4.0.0] - 2025-10-01
 
 - BREAKING: Restructure hono middleware for lazy config
