@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+## [4.1.0] - 2025-10-02
+
 - Allow Hono middleware config param to be typed
 - Allow Hono middleware config param to be async
 
@@ -80,7 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unlike express-grip, no longer requires the use of pre- and post- middlewares.  A single
   middleware is able to provide the necessary headers and content after routes have run.
 
-[unreleased]: https://github.com/fanout/js-serve-grip/compare/v4.0.0...HEAD
+[unreleased]: https://github.com/fanout/js-serve-grip/compare/v4.1.0...HEAD
+[4.1.0]: https://github.com/fanout/js-serve-grip/compare/v4.0.0...v4.1.0
 [4.0.0]: https://github.com/fanout/js-serve-grip/compare/v3.0.0...v4.0.0
 [3.0.0]: https://github.com/fanout/js-serve-grip/compare/v2.0.1...v3.0.0
 [2.0.1]: https://github.com/fanout/js-serve-grip/compare/v2.0.0...v2.0.1
