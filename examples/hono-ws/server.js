@@ -56,7 +56,7 @@ app.post('/api/broadcast', async (c) => {
 
     const data = await c.req.text();
 
-    const publisher = serveGripMiddleware.getPublisher();
+    const publisher = c.var.grip.getPublisher();
     await publisher.publishFormats(CHANNEL_NAME, new WebSocketMessageFormat(data));
 
     return c.text('Ok\n');
