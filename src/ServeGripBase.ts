@@ -10,6 +10,7 @@ import {
     validateSig,
     ConnectionIdMissingException,
     WebSocketDecodeEventException,
+    encodeBytesToBase64String,
 } from '@fanoutio/grip';
 
 import { IServeGripConfig } from './IServeGripConfig.js';
@@ -58,7 +59,7 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
                     // Add gripVerifyKey to GRIP URL if verify-key doesn't already exist on it
                     const url = new URL(grip);
                     if (url.searchParams.get('verify-key') == null) {
-                        const verifyKeyValue = gripVerifyKey instanceof Buffer ? 'base64:' + gripVerifyKey.toString('base64') : gripVerifyKey;
+                        const verifyKeyValue = gripVerifyKey instanceof Uint8Array ? 'base64:' + encodeBytesToBase64String(gripVerifyKey) : gripVerifyKey;
                         url.searchParams.set('verify-key', verifyKeyValue);
                     }
                     gripProxies = url.toString();

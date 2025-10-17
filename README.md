@@ -290,12 +290,12 @@ const serveGripMiddleware = new ServeGrip({
 
 Available options:
 
-| Key                 | Value                                                                                                                                                                                                                                                                                              |
-|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `grip`              | A definition of GRIP proxies used to publish messages, or a preconfigured Publisher object from `@fanoutio/grip`. See below for details.                                                                                                                                                           |
-| `gripVerifyKey`     | (optional) A string or Buffer that can be used to specify the `verify-key` component of the GRIP configuration.<br />Applies only if -<br />* `grip` is provided as a string, configuration object, or array of configuration objects<br />* `grip` does not already contain a `verify_key` value. |
-| `gripProxyRequired` | (optional) A boolean value representing whether all incoming requests should require that they be called behind a GRIP proxy.  If this is true and a GRIP proxy is not detected, then a `501 Not Implemented` error will be issued. Defaults to `false`.                                           |
-| `prefix`            | (optional) A string that will be prepended to the name of channels being published to. This can be used for namespacing. Defaults to `''`.                                                                                                                                                         |
+| Key                 | Value                                                                                                                                                                                                                                                                                                  |
+|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `grip`              | A definition of GRIP proxies used to publish messages, or a preconfigured Publisher object from `@fanoutio/grip`. See below for details.                                                                                                                                                               |
+| `gripVerifyKey`     | (optional) A string or Uint8Array that can be used to specify the `verify-key` component of the GRIP configuration.<br />Applies only if -<br />* `grip` is provided as a string, configuration object, or array of configuration objects<br />* `grip` does not already contain a `verify_key` value. |
+| `gripProxyRequired` | (optional) A boolean value representing whether all incoming requests should require that they be called behind a GRIP proxy.  If this is true and a GRIP proxy is not detected, then a `501 Not Implemented` error will be issued. Defaults to `false`.                                               |
+| `prefix`            | (optional) A string that will be prepended to the name of channels being published to. This can be used for namespacing. Defaults to `''`.                                                                                                                                                             |
 
 In most cases your application will construct a singleton instance of this class and use it as
 the middleware.
@@ -304,13 +304,13 @@ The `grip` parameter may be provided as any of the following:
 
 1. An object with the following fields:
 
-   | Field         | Description                                                                                       |
-   |---------------|---------------------------------------------------------------------------------------------------|
-   | `control_uri` | The Control URI of the GRIP client.                                                               |
-   | `control_iss` | (optional) The Control ISS, if required by the GRIP client.                                       |
-   | `key`         | (optional) string or Buffer. The key to use with the Control ISS, if required by the GRIP client. |
-   | `verify_iss`  | (optional) The ISS to use when validating a GRIP signature.                                       |
-   | `verify_key`  | (optional) string or Buffer. The key to use when validating a GRIP signature.                     |
+   | Field         | Description                                                                                           |
+   |---------------|-------------------------------------------------------------------------------------------------------|
+   | `control_uri` | The Control URI of the GRIP client.                                                                   |
+   | `control_iss` | (optional) The Control ISS, if required by the GRIP client.                                           |
+   | `key`         | (optional) string or Uint8Array. The key to use with the Control ISS, if required by the GRIP client. |
+   | `verify_iss`  | (optional) The ISS to use when validating a GRIP signature.                                           |
+   | `verify_key`  | (optional) string or Uint8Array. The key to use when validating a GRIP signature.                     |
 
 2. An array of such objects.
 

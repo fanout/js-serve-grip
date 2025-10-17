@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+- Replace node:buffer with Uint8Array everywhere
 - Update Hono examples for 4.1.0
 - Update README for Hono
 

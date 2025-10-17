@@ -5,7 +5,7 @@ import {
 
 export interface IServeGripConfig {
     grip?: string | IGripConfig | IGripConfig[] | Publisher;
-    gripVerifyKey?: string | Buffer;
+    gripVerifyKey?: string | Uint8Array;
     gripProxyRequired?: boolean;
     prefix?: string;
     publisherClass?: { new(): Publisher }
