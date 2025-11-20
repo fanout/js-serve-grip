@@ -1,20 +1,26 @@
-import { ConfigStore } from 'fastly:config-store';
 import { Hono } from 'hono';
-import { fire } from 'hono/service-worker'
+import { buildFire } from '@fastly/hono-fastly-compute';
 
 import { serveGrip, fanoutSelfHandoffMiddleware, type Variables } from '@fanoutio/serve-grip/hono';
+import { type IServeGripConfig } from '@fanoutio/serve-grip';
+
+const fire = buildFire({
+    grip: "ConfigStore",
+});
 
 type Env = {
     Variables: Variables,
+    Bindings: typeof fire.Bindings,
 };
 const app = new Hono<Env>();
 
 const CHANNEL_NAME = 'test';
 
-const serveGripMiddleware = serveGrip(() => {
+const serveGripMiddleware = serveGrip<Env>((c) => {
     return {
-        grip: new ConfigStore('grip').get('GRIP_URL') ?? 'http://localhost:5561/',
-    };
+        grip: c.env.grip.get('GRIP_URL') ?? 'http://localhost:5561/',
+        gripVerifyKey: c.env.grip.get('GRIP_VERIFY_KEY'),
+    } satisfies IServeGripConfig;
 });
 
 app.use(serveGripMiddleware);
@@ -23,19 +29,18 @@ app.get('/api/*', fanoutSelfHandoffMiddleware());
 
 app.get('/api/stream', async (c) => {
 
-    if (c.var.grip.isProxied) {
-
-        const gripInstruct = c.var.grip.startInstruct();
-        gripInstruct.addChannel(CHANNEL_NAME);
-        gripInstruct.setHoldStream();
-
-        return c.text('[stream open]\n');
-
-    } else {
-
-        return c.text('[not proxied]\n');
-
+    if (!c.var.grip.isProxied) {
+        return c.text('[not proxied]\n', 400);
     }
+    if (c.var.grip.needsSigned && !c.var.grip.isSigned) {
+        return c.text('[not signed]\n', 400);
+    }
+
+    const gripInstruct = c.var.grip.startInstruct();
+    gripInstruct.addChannel(CHANNEL_NAME);
+    gripInstruct.setHoldStream();
+
+    return c.text('[stream open]\n');
 
 });
 

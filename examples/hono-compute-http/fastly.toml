@@ -20,7 +20,8 @@ service_id = ""
   [local_server.config_stores.grip]
     format = "inline-toml"
   [local_server.config_stores.grip.contents]
-    GRIP_URL = "http://localhost:5561/"
+    GRIP_URL = "http://localhost:5561/?verify-iss=viceroy"
+    GRIP_VERIFY_KEY = "viceroy_dev_signing_key_dont_use_in_production2"
 
 [scripts]
   build = "npm run build"

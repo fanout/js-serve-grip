@@ -13,10 +13,11 @@
   "license": "MIT",
   "dependencies": {
     "@fanoutio/serve-grip": "file:../../",
+    "@fastly/hono-fastly-compute": "^0.3.6",
     "@fastly/js-compute": "^3.34.0",
     "hono": "^4.9.9"
   },
   "devDependencies": {
-    "@fastly/cli": "^12.0.0"
+    "@fastly/cli": "^13.1.0"
   }
 }

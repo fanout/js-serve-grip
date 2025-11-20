@@ -1,21 +1,27 @@
-import { ConfigStore } from 'fastly:config-store';
 import { Hono } from 'hono';
-import { fire } from 'hono/service-worker'
+import { buildFire } from '@fastly/hono-fastly-compute';
 
 import { WebSocketMessageFormat } from '@fanoutio/grip';
 import { serveGrip, fanoutSelfHandoffMiddleware, type Variables } from '@fanoutio/serve-grip/hono';
+import { type IServeGripConfig } from '@fanoutio/serve-grip';
+
+const fire = buildFire({
+    grip: "ConfigStore",
+});
 
 type Env = {
     Variables: Variables,
+    Bindings: typeof fire.Bindings,
 };
 const app = new Hono<Env>();
 
 const CHANNEL_NAME = 'test';
 
-const serveGripMiddleware = serveGrip(() => {
+const serveGripMiddleware = serveGrip<Env>((c) => {
     return {
-        grip: new ConfigStore('grip').get('GRIP_URL') ?? 'http://localhost:5561/',
-    };
+        grip: c.env.grip.get('GRIP_URL') ?? 'http://localhost:5561/',
+        gripVerifyKey: c.env.grip.get('GRIP_VERIFY_KEY'),
+    } satisfies IServeGripConfig;
 });
 
 app.use(serveGripMiddleware);
@@ -27,8 +33,7 @@ app.post('/api/websocket', async (c) => {
 
     const { wsContext } = c.var.grip;
     if (wsContext == null) {
-        c.status(400);
-        return c.text('[not a websocket request]\n');
+        return c.text('[not a websocket request]\n', 400);
     }
 
     // If this is a new connection, accept it and subscribe it to a channel

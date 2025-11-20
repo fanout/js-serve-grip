@@ -22,8 +22,7 @@ app.post('/api/websocket', async (c) => {
 
     const { wsContext } = c.var.grip;
     if (wsContext == null) {
-        c.status(400);
-        return c.text('[not a websocket request]\n');
+        return c.text('[not a websocket request]\n', 400);
     }
 
     // If this is a new connection, accept it and subscribe it to a channel

@@ -19,19 +19,18 @@ app.use(serveGripMiddleware);
 
 app.get('/api/stream', async (c) => {
 
-    if (c.var.grip.isProxied) {
-
-        const gripInstruct = c.var.grip.startInstruct();
-        gripInstruct.addChannel(CHANNEL_NAME);
-        gripInstruct.setHoldStream();
-
-        return c.text('[stream open]\n');
-
-    } else {
-
-        return c.text('[not proxied]\n');
-
+    if (!c.var.grip.isProxied) {
+        return c.text('[not proxied]\n', 400);
     }
+    if (c.var.grip.needsSigned && !c.var.grip.isSigned) {
+        return c.text('[not signed]\n', 400);
+    }
+
+    const gripInstruct = c.var.grip.startInstruct();
+    gripInstruct.addChannel(CHANNEL_NAME);
+    gripInstruct.setHoldStream();
+
+    return c.text('[stream open]\n');
 
 });
 
