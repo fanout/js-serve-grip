@@ -2,15 +2,9 @@
 import { createFanoutHandoff } from 'fastly:fanout';
 import { createMiddleware } from 'hono/factory';
 
-import { Variables } from '../ServeGrip.js';
-
-type Env = {
-    Variables: Variables,
-};
-
 export const fanoutSelfHandoffMiddleware =
-    (backend: string = 'self') => createMiddleware<Env>(async (c, next) => {
-        if (!c.var.grip.isProxied) {
+    (backend: string = 'self') => createMiddleware(async (c, next) => {
+        if (!c.req.raw.headers.has('Grip-Sig')) {
             c.res = undefined;
             c.res = createFanoutHandoff(c.req.raw, backend);
             return;
