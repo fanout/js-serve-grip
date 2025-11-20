@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+## [4.1.2] - 2025-11-20
+
+- Make `fanoutSelfHandoffMiddleware` work based on whether `Grip-Sig` is set on the request
+- Correct detection of isSigned
+- Improve Hono examples
+
 ## [4.1.1] - 2025-10-17
 
 - Replace node:buffer with Uint8Array everywhere
@@ -88,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unlike express-grip, no longer requires the use of pre- and post- middlewares.  A single
   middleware is able to provide the necessary headers and content after routes have run.
 
-[unreleased]: https://github.com/fanout/js-serve-grip/compare/v4.1.1...HEAD
+[unreleased]: https://github.com/fanout/js-serve-grip/compare/v4.1.2...HEAD
+[4.1.2]: https://github.com/fanout/js-serve-grip/compare/v4.1.1...v4.1.2
 [4.1.1]: https://github.com/fanout/js-serve-grip/compare/v4.1.0...v4.1.1
 [4.1.0]: https://github.com/fanout/js-serve-grip/compare/v4.0.0...v4.1.0
 [4.0.0]: https://github.com/fanout/js-serve-grip/compare/v3.0.0...v4.0.0
