@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+- Release to npmjs using updated CI workflow and trusted publishing
+
 ## [4.1.2] - 2025-11-20
 
 - Make `fanoutSelfHandoffMiddleware` work based on whether `Grip-Sig` is set on the request
