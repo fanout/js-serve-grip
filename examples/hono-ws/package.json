@@ -13,6 +13,6 @@
     "@fanoutio/grip": "^4.3.1",
     "@fanoutio/serve-grip": "file:../../",
     "@hono/node-server": "^1.19.3",
-    "hono": "^4.9.9"
+    "hono": "^4.11.9"
   }
 }
