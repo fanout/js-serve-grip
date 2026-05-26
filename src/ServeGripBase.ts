@@ -160,9 +160,20 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
                         needsSigned = true;
                         // If all proxies have keys, then only consider the request
                         // signed if at least one of them has signed it
-                        if (await anyTrue(clients.map((client) =>
-                            validateSig(gripSigHeader, client.getVerifyKey?.() ?? '', client.getVerifyIss?.())
-                        ))) {
+                        let hasValidSignature = false;
+                        for (const client of clients) {
+                            if (
+                                await validateSig(
+                                    gripSigHeader,
+                                    client.getVerifyKey?.() ?? '',
+                                    client.getVerifyIss?.()
+                                )
+                            ) {
+                                hasValidSignature = true;
+                                break;
+                            }
+                        }
+                        if (hasValidSignature) {
                             isProxied = true;
                             isSigned = true;
                         }
@@ -271,26 +282,4 @@ export abstract class ServeGripBase<TRequest, TResponse> extends CallableInstanc
         debug('ServeGrip#run - end');
         return true;
     }
-}
-
-async function anyTrue(promises: Promise<boolean>[]): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-        let remaining = promises.length;
-        if (remaining === 0) {
-            resolve(false);
-            return;
-        }
-        for (const p of promises) {
-            p.then(value => {
-                if (value) {
-                    resolve(true);
-                } else {
-                    remaining--;
-                    if (remaining === 0) {
-                        resolve(false);
-                    }
-                }
-            }).catch(reject);
-        }
-    });
 }
