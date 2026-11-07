@@ -144,7 +144,8 @@ export function serveGrip<E extends Env>(config: ServeGripParams<E>): Middleware
                 const events = grip.wsContext.getOutgoingEvents();
 
                 c.res = new Response(
-                    encodeWebSocketEvents(events),
+                    // BodyInit accepts only a Uint8Array that uses an ArrayBuffer.
+                    new Uint8Array(encodeWebSocketEvents(events)),
                     {
                         status: 200,
                         headers: wsContextHeaders,

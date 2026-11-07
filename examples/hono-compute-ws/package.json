@@ -14,11 +14,11 @@
   "dependencies": {
     "@fanoutio/grip": "^4.3.1",
     "@fanoutio/serve-grip": "file:../../",
-    "@fastly/hono-fastly-compute": "^0.3.6",
-    "@fastly/js-compute": "^3.34.0",
+    "@fastly/hono-fastly-compute": "^0.4.0",
+    "@fastly/js-compute": "^4.1.0",
     "hono": "^4.11.9"
   },
   "devDependencies": {
-    "@fastly/cli": "^13.1.0"
+    "@fastly/cli": "^17.0.0"
   }
 }
