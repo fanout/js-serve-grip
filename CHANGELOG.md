@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+## [4.3.0] - 2026-11-08
+
 - Support `@fastly/js-compute` 4. The optional peer dependency is now `^3.0.0 || ^4.0.0`.
 - Check grip signatures in sequence rather than in parallel to save CPU
 - Update the Hono Compute examples to `@fastly/js-compute` 4
@@ -104,7 +106,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unlike express-grip, no longer requires the use of pre- and post- middlewares.  A single
   middleware is able to provide the necessary headers and content after routes have run.
 
-[unreleased]: https://github.com/fanout/js-serve-grip/compare/v4.2.0...HEAD
+[unreleased]: https://github.com/fanout/js-serve-grip/compare/v4.3.0...HEAD
+[4.3.0]: https://github.com/fanout/js-serve-grip/compare/v4.2.0...v4.3.0
 [4.2.0]: https://github.com/fanout/js-serve-grip/compare/v4.1.2...v4.2.0
 [4.1.2]: https://github.com/fanout/js-serve-grip/compare/v4.1.1...v4.1.2
 [4.1.1]: https://github.com/fanout/js-serve-grip/compare/v4.1.0...v4.1.1
