@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+- Support `@fastly/js-compute` 4. The optional peer dependency is now `^3.0.0 || ^4.0.0`.
+- Check grip signatures in sequence rather than in parallel to save CPU
+- Update the Hono Compute examples to `@fastly/js-compute` 4
+- Fix the GRIP verify key in the `hono-compute-http` example
+
 ## [4.2.0] - 2026-02-12
 
 - Release to npmjs using updated CI workflow and trusted publishing
